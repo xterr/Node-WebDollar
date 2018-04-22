@@ -26,7 +26,6 @@ class NodesList {
         this.removeDisconnectedSockets();
     }
 
-
     searchNodeSocketByAddress(sckAddress, connectionType, validationDoubleConnectionsTypes){
 
         if (connectionType === undefined) connectionType = 'all';
@@ -78,13 +77,13 @@ class NodesList {
     //Removing socket from the list (the connection was terminated)
     disconnectSocket(socket, connectionType){
 
-
         if (socket !== null && !socket.hasOwnProperty("node") ) {
 
             //console.error("Error - disconnectSocket rejected by invalid helloValidated");
             //if (socket.hasOwnProperty("node")) console.log("hello validated value",socket.node.protocol.helloValidated);
             socket.disconnect();
             return false;
+
         }
 
         if (connectionType === undefined) connectionType = 'all';
@@ -167,7 +166,6 @@ class NodesList {
 
         return count;
     }
-
 
     removeDisconnectedSockets(){
 

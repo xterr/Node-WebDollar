@@ -244,6 +244,13 @@ class NodesWaitlist {
 
         }
 
+
+        if (listType === NodesType.NODE_TERMINAL )
+            this.waitListFullNodes = list;
+
+        else if (listType === NodesType.NODE_WEB_PEER )
+            this.waitListFullNodes = list;
+
         return false;
 
     }
@@ -268,7 +275,11 @@ class NodesWaitlist {
 
             }
 
+            if( listType === NodesType.NODE_TERMINAL) this.waitListFullNodes = list;
+            else if ( listType === NodesType.NODE_WEB_PEER ) this.waitListLightNodes = list;
+
             return true;
+
         }
 
         return false;
@@ -283,6 +294,9 @@ class NodesWaitlist {
 
         for (let i=0; i<list.length; i++)
             list[i].resetWaitlistNode();
+
+        if( listType === NodesType.NODE_TERMINAL) this.waitListFullNodes = list;
+        else if ( listType === NodesType.NODE_WEB_PEER ) this.waitListLightNodes = list;
 
     }
 

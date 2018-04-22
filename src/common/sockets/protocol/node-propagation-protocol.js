@@ -169,8 +169,17 @@ class NodePropagationProtocol {
 
     _nodeDisconnected(socket, nodeWaitListObject){
 
-        if (nodeWaitListObject.type === NODES_TYPE.NODE_TERMINAL) socket.node.sendRequest("propagation/nodes", {op: "deleted-full-nodes", addresses: [nodeWaitListObject.toJSON() ]},);
-        else if(nodeWaitListObject.type === NODES_TYPE.NODE_WEB_PEER) socket.node.sendRequest("propagation/nodes", {op: "deleted-light-nodes", addresses: [nodeWaitListObject.toJSON() ]},);
+        if (nodeWaitListObject.type === NODES_TYPE.NODE_TERMINAL){
+
+            socket.node.sendRequest("propagation/nodes", {op: "deleted-full-nodes", addresses: [nodeWaitListObject.toJSON() ]},);
+            this._newFullNodesWaitList = [];
+
+        }else if(nodeWaitListObject.type === NODES_TYPE.NODE_WEB_PEER){
+
+            socket.node.sendRequest("propagation/nodes", {op: "deleted-light-nodes", addresses: [nodeWaitListObject.toJSON() ]},);
+            this._newLightNodesWaitList = [];
+
+        }
 
     }
 
