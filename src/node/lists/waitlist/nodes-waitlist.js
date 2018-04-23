@@ -216,26 +216,14 @@ class NodesWaitlist {
 
         let list = [];
 
-        if (listType === NodesType.NODE_TERMINAL ){
-
+        if (listType === NodesType.NODE_TERMINAL )
             list = this.waitListFullNodes;
+        else if (listType === NodesType.NODE_WEB_PEER )
+            list = this.waitListLightNodes;
 
-            if (list.length < this.MAX_FULLNODE_WAITLIST_CONNECTIONS)
-                return false;
+        for (let i=list.length-1; i>=0; i--) {
 
-
-        }else if (listType === NodesType.NODE_WEB_PEER ){
-
-            list = this.waitListFullNodes;
-
-            if (list.length < this.MAX_LIGHTNODE_WAITLIST_CONNECTIONS)
-                return false;
-
-        }
-
-        for (let i=list-1; i>=0; i--) {
-
-            if ( list[i].errorTrial > this.MAX_ERROR_TRIALS || list[i].type === NodesType.NODE_WEB_PEER ) {
+            if ( list[i].errorTrial > this.MAX_ERROR_TRIALS ) {
 
                 this.emitter.emit("waitlist/delete-node", list[i]);
                 list.splice(i, 1);

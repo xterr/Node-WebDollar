@@ -68,6 +68,9 @@ class NodeProtocol {
             //check if it is a unique connection, add it to the list
             let previousConnection = NodesList.searchNodeSocketByAddress(node.sckAddress, "all", validationDoubleConnectionsTypes);
 
+            if( node.sckAddress.uuid === consts.SETTINGS.UUID )
+                return false;
+
             if ( previousConnection === null ){
                 console.log("RECEIVED HELLO NODE BACK", response.version, response.uuid);
 
