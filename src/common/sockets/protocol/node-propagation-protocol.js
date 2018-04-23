@@ -39,7 +39,6 @@ class NodePropagationProtocol {
         this._processList(this._newFullNodesWaitList);
         this._processList(this._newLightNodesWaitList);
 
-
         setTimeout( this._processNewWaitlistInterval.bind(this), 300);
 
     }
@@ -135,15 +134,19 @@ class NodePropagationProtocol {
 
                     case "deleted-light-nodes":
 
-                        for (let i = 0; i < addresses.length; i++)
+                        for (let i = 0; i < addresses.length; i++){
+                            this.deleteSocketFromList(socket,NODES_TYPE.NODE_WEB_PEER);
                             NodesWaitlist.removedWaitListElement( addresses[i].addr, addresses[i].port, socket, NODES_TYPE.NODE_WEB_PEER );
+                        }
 
                         break;
 
                     case "deleted-full-nodes":
 
-                        for (let i = 0; i < addresses.length; i++)
+                        for (let i = 0; i < addresses.length; i++){
+                            this.deleteSocketFromList(socket,NODES_TYPE.NODE_TERMINAL);
                             NodesWaitlist.removedWaitListElement( addresses[i].addr, addresses[i].port, socket, NODES_TYPE.NODE_TERMINAL );
+                        }
 
                         break;
 
@@ -172,14 +175,36 @@ class NodePropagationProtocol {
         if (nodeWaitListObject.type === NODES_TYPE.NODE_TERMINAL){
 
             socket.node.sendRequest("propagation/nodes", {op: "deleted-full-nodes", addresses: [nodeWaitListObject.toJSON() ]},);
-            this._newFullNodesWaitList = [];
+            this.deleteSocketFromList(socket,nodeWaitListObject);
 
         }else if(nodeWaitListObject.type === NODES_TYPE.NODE_WEB_PEER){
 
             socket.node.sendRequest("propagation/nodes", {op: "deleted-light-nodes", addresses: [nodeWaitListObject.toJSON() ]},);
-            this._newLightNodesWaitList = [];
+            this.deleteSocketFromList(socket,nodeWaitListObject);
 
         }
+
+    }
+
+    deleteSocketFromList(socket, nodeWaitListObject){
+
+        var list = [];
+
+        if (nodeWaitListObject.type === NODES_TYPE.NODE_TERMINAL)
+            list = this._newFullNodesWaitList;
+        else if(nodeWaitListObject.type === NODES_TYPE.NODE_WEB_PEER)
+            list = this._newLightNodesWaitList;
+
+        for(var i=0;i<this._newFullNodesWaitList; i++)
+            if (list[i].json.node.sckAddress.matchAddress(socket.node.sckAddress)){
+                list.splice(i, 1);
+                break
+            }
+
+        if (nodeWaitListObject.type === NODES_TYPE.NODE_TERMINAL)
+            this._newFullNodesWaitList = list;
+        else if(nodeWaitListObject.type === NODES_TYPE.NODE_WEB_PEER)
+            this._newLightNodesWaitList = list;
 
     }
 
