@@ -138,11 +138,9 @@ class NodeClient {
 
         });
 
-
         this.socket.node.protocol.propagation.initializePropagation();
 
     }
-
 
 }
 

@@ -50,10 +50,10 @@ class NetworkAdjustedTimeCluster{
     findSocketIncluded(socket){
 
         for (let j=0; j<this.sockets.length; j++)
+
             if (this.sockets[j].socket.node.sckAddress.matchAddress(socket.node.sckAddress)){
                 return j;
             }
-
         return -1;
     }
 

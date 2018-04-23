@@ -268,7 +268,7 @@ class NodesWaitlist {
 
             list[index].removeBackedBy(backedBy);
 
-            if ( list[index].length === 0) {
+            if ( list[index].backedBy.length === 0) {
 
                 this.emitter.emit("waitlist/delete-node", list[index]);
                 list.splice(index, 1);

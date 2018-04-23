@@ -99,19 +99,30 @@ class NodesWaitlistObject {
 
     pushBackedBy(socket){
 
-        for (let i=0; i< this.backedBy.length; i++)
-            if (this.backedBy[i] === socket)
-                return false;
+        if(!this.checkBackedByIfAlreadyExist(socket)) return false;
+            else this.backedBy.push(socket);
 
-        this.backedBy.push(socket);
+    }
+
+    checkBackedByIfAlreadyExist(socket){
+
+        for (let i=0; i< this.backedBy.length; i++)
+            if (this.backedBy[i] !== 'fallback')
+                if (this.backedBy[i].json.node.sckAddress.matchAddress(socket.node.sckAddress))
+                    return false;
+
+        return true;
+
     }
 
     removeBackedBy(socket){
+
         for (let i=0; i< this.backedBy.length; i++)
             if (this.backedBy[i] === socket) {
                 this.backedBy.splice(i, 1);
                 return;
             }
+
     }
 
     findBackedBy(socket){
