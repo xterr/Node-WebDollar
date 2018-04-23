@@ -232,6 +232,18 @@ class InterfaceBlockchainBlock {
 
         return  await WebDollarCrypto.hashPOW(buffer);
     }
+    
+    static async computeHashStatic(newNonce, height, difficultyTargetPrev, computedBlockPrefix, nonce) {
+        
+        let buffer = Buffer.concat ( [
+                                       Serialization.serializeBufferRemovingLeadingZeros( Serialization.serializeNumber4Bytes(height) ),
+                                       Serialization.serializeBufferRemovingLeadingZeros( difficultyTargetPrev ),
+                                       computedBlockPrefix,
+                                       Serialization.serializeNumber4Bytes(newNonce||nonce ),
+                                     ] );
+
+        return await WebDollarCrypto.hashPOW(buffer);
+    }
 
     serializeBlock(requestHeader){
 
