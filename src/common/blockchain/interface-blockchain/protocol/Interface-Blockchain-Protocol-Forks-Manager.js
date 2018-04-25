@@ -103,7 +103,7 @@ class InterfaceBlockchainProtocolForksManager {
                     let bIncludeBan = true;
 
                     if (this.blockchain.agent.light)
-                        if (["fork is something new", "blockchain has same length, but your block is not better than mine", "discoverAndProcessFork - fork already found by socket", "my blockchain is larger than yours"].indexOf( exception.message ) >= 0)
+                        if (["fork is something new", "blockchain has same length, but your block is not better than mine", "discoverAndProcessFork - fork already found by socket", "my blockchain is larger than yours", "same proof, but your blockchain is smaller than mine"].indexOf( exception.message ) >= 0)
                             bIncludeBan = false;
 
                     if (bIncludeBan) {
@@ -146,7 +146,7 @@ class InterfaceBlockchainProtocolForksManager {
 
 
             // if (Math.random() < 0.1)
-            // console.warn("forksAdministrator.forks.length", this.blockchain.forksAdministrator.forks.length, bestFork !== null)
+                // console.warn("forksAdministrator.forks.length", this.blockchain.forksAdministrator.forks.length, bestFork !== null)
 
         } catch (exception){
 
