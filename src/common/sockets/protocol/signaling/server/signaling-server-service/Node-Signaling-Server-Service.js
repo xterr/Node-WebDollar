@@ -3,6 +3,7 @@ import NodeSignalingServerWaitlistObject from "./Node-Signaling-Server-Waitlist-
 import NodeSignalingServerProtocol from "./../Node-Signaling-Server-Protocol"
 import SignalingServerRoomListConnections from '../signaling-server-room/Signaling-Server-Room-List-Connections'
 import NodeSignalingServerWaitlistObjectType from "./Node-Signaling-Server-Waitlist-Object-Type"
+import SignalingServerRoomConnectionObject from './../signaling-server-room/Signaling-Server-Room-Connection-Object';
 
 class NodeSignalingServerService{
 
@@ -112,9 +113,11 @@ class NodeSignalingServerService{
 
     recalculateSignalingWaitlistTypeFromConnection(connection) {
 
-        this.recalculateSignalingWaitlistType(connection.client1);
-        this.recalculateSignalingWaitlistType(connection.client2);
+        let waitlist = this.findNodeSignalingServerWaitlist(connection.client1);
+        this.recalculateSignalingWaitlistType(waitlist);
 
+        waitlist = this.findNodeSignalingServerWaitlist(connection.client2);
+        this.recalculateSignalingWaitlistType(waitlist);
 
     }
 
@@ -155,25 +158,26 @@ class NodeSignalingServerService{
 
                 }
 
-
             }
 
             if (signalingWaitlistClient1.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE){
 
                 if (countMasters >= 1){
 
-                    if (countMasters > 2 || signalingWaitlistClient1.acceptWebPeers === false ){
+                    if (countMasters > 2 || !signalingWaitlistClient1.acceptWebPeers ){
 
                         signalingWaitlistClient1.socket.disconnect();
                         return;
 
                     }
 
-                } else if (countSlaves > 4 || signalingWaitlistClient1.acceptWebPeers === false ){
+                } else if (countSlaves > 4 || !signalingWaitlistClient1.acceptWebPeers){
 
                     signalingWaitlistClient1.type = NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER;
 
                 }
+
+            } else if (signalingWaitlistClient1.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER){
 
             }
 
