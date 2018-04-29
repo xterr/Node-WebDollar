@@ -52,6 +52,8 @@ class NodeSignalingServerProtocol {
                     if (waitlist !== null)
                         waitlist.acceptWebPeers = true;
 
+                    NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection)
+
                 }
 
             } catch (exception){
@@ -68,8 +70,11 @@ class NodeSignalingServerProtocol {
 
                     let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(data.connectionId);
 
-                    if (connection !== null)
+                    if (connection !== null) {
                         connection.status = SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished;
+                        NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection);
+                    }
+
 
                 }
             } catch (exception){
@@ -86,8 +91,10 @@ class NodeSignalingServerProtocol {
 
                     let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(data.connectionId);
 
-                    if (connection !== null)
+                    if (connection !== null) {
                         connection.status = SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionError;
+                        NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection)
+                    }
 
                 }
 
@@ -102,6 +109,7 @@ class NodeSignalingServerProtocol {
 
 
     }
+
 
     _initializeClient1(client1) {
 

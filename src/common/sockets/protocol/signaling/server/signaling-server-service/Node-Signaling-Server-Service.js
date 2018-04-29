@@ -86,11 +86,19 @@ class NodeSignalingServerService{
                 let client1, client2 = null;
 
                 if (Math.random() > 0.5) {
+
                     client1 = this.waitlist[i];
                     client2 = this.waitlist[j];
+
                 } else {
+
                     client1 = this.waitlist[j];
                     client2 = this.waitlist[i];
+
+                }
+
+                if (client1.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER && client2.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER){
+                    continue;
                 }
 
                 NodeSignalingServerProtocol.connectWebPeer(client1.socket, client2.socket);
@@ -102,11 +110,27 @@ class NodeSignalingServerService{
         setTimeout(this._connectWebPeers.bind(this), 2000);
     }
 
+    recalculateSignalingWaitlistTypeFromConnection(connection) {
+
+        this.recalculateSignalingWaitlistType(connection.client1);
+        this.recalculateSignalingWaitlistType(connection.client2);
+
+
+    }
+
     recalculateSignalingWaitlistType(signalingWaitlistClient1){
 
         try{
 
-            for (let i=0; i<SignalingServerRoomListConnections.list.length; i++){
+            let countSlaves = 0;
+            let countMasters = 0;
+
+            for (let i = 0; i<SignalingServerRoomListConnections.list.length; i++){
+
+
+                let connection = SignalingServerRoomListConnections.list[i];
+                if (connection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished)
+                    continue;
 
                 let client1, client2;
 
@@ -123,9 +147,31 @@ class NodeSignalingServerService{
 
                     let signalingWaitlistClient2 = this.searchNodeSignalingServerWaitlist(client2);
 
-                    if (signalingWaitlistClient1.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER && signalingWaitlistClient2.type){
+                    if (signalingWaitlistClient2.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER)
+                        countMasters ++;
+                    else
+                    if (signalingWaitlistClient2.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE)
+                        countSlaves ++;
+
+                }
+
+
+            }
+
+            if (signalingWaitlistClient1.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE){
+
+                if (countMasters >= 1){
+
+                    if (countMasters > 2 || signalingWaitlistClient1.acceptWebPeers === false ){
+
+                        signalingWaitlistClient1.socket.disconnect();
+                        return;
 
                     }
+
+                } else if (countSlaves > 4 || signalingWaitlistClient1.acceptWebPeers === false ){
+
+                    signalingWaitlistClient1.type = NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER;
 
                 }
 
