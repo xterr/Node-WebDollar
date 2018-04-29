@@ -44,6 +44,7 @@ class NodeSignalingServerProtocol {
                 let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById(data.connectionId);
 
                 if (connection !== null) {
+
                     connection.status = SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionNotEstablished;
 
                     let waitlist = NodeSignalingServerService.searchNodeSignalingServerWaitlist(socket);

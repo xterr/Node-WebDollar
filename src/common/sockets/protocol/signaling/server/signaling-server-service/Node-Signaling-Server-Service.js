@@ -100,6 +100,11 @@ class NodeSignalingServerService{
         setTimeout(this._connectWebPeers.bind(this), 2000);
     }
 
+    recalculateSignalingWaitlistType(client){
+
+        for (let i=0; client.)
+
+    }
 
 }
 
