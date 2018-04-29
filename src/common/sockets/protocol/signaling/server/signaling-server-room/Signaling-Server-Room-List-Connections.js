@@ -1,5 +1,5 @@
 import SocketAddress from 'common/sockets/socket-address'
-import SignalingServerRoomConnectionObject from './signaling-server-room-connection-object';
+import SignalingServerRoomConnectionObject from './Signaling-Server-Room-Connection-Object';
 import NodesList from 'node/lists/nodes-list'
 import CONNECTIONS_TYPE from "node/lists/types/Connections-Type"
 import NODES_TYPE from "node/lists/types/Nodes-Type"
@@ -9,7 +9,7 @@ import NODES_TYPE from "node/lists/types/Nodes-Type"
 
 const uuid = require('uuid');
 
-class SignalingServerRoomList {
+class SignalingServerRoomListConnections {
 
     // signalingRoom = []               - storing the connected sockets
     // events = []                      - used for callbacks
@@ -89,7 +89,7 @@ class SignalingServerRoomList {
     removeServerRoomConnection( connection ) {
 
         for (let i=0; this.list.length; i++)
-            if (this.list[i].id === connection.id){
+            if ( this.list[i].id === connection.id ){
                 this.list.splice(i,1);
                 return;
             }
@@ -99,4 +99,4 @@ class SignalingServerRoomList {
 
 }
 
-export default new SignalingServerRoomList();
+export default new SignalingServerRoomListConnections();

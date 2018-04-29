@@ -2,8 +2,8 @@ import consts from 'consts/const_global'
 
 import NodesList from 'node/lists/nodes-list'
 
-import SignalingServerRoomList from './signaling-server-room/signaling-server-room-list'
-import SignalingServerRoomConnectionObject from './signaling-server-room/signaling-server-room-connection-object'
+import SignalingServerRoomListConnections from './signaling-server-room/Signaling-Server-Room-List-Connections'
+import SignalingServerRoomConnectionObject from './signaling-server-room/Signaling-Server-Room-Connection-Object'
 import NodeSignalingServerService from "./signaling-server-service/Node-Signaling-Server-Service"
 
 class NodeSignalingServerProtocol {
@@ -41,7 +41,7 @@ class NodeSignalingServerProtocol {
 
             try {
 
-                let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById(data.connectionId);
+                let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(data.connectionId);
 
                 if (connection !== null) {
 
@@ -66,7 +66,7 @@ class NodeSignalingServerProtocol {
             try {
                 if (!data.connectionId) {
 
-                    let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById(data.connectionId);
+                    let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(data.connectionId);
 
                     if (connection !== null)
                         connection.status = SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished;
@@ -84,7 +84,7 @@ class NodeSignalingServerProtocol {
 
                 if (!data.connectionId) {
 
-                    let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById(data.connectionId);
+                    let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(data.connectionId);
 
                     if (connection !== null)
                         connection.status = SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionError;
@@ -110,7 +110,7 @@ class NodeSignalingServerProtocol {
         client1.node.on("signals/client/initiator/generate-initiator-signal/answer", (initiatorAnswer) => {
 
             try {
-                let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById(initiatorAnswer.connectionId);
+                let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(initiatorAnswer.connectionId);
 
                 if (connection === null) {
                     console.error("signals/client/initiator/generate-initiator-signal/answer connection is null");
@@ -154,7 +154,7 @@ class NodeSignalingServerProtocol {
 
             try {
 
-                let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById(result.connectionId);
+                let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(result.connectionId);
 
                 if (connection === null){
                     console.error("signals/client/initiator/join-answer-signal/answer connection is empty", result.connectionId);
@@ -183,7 +183,7 @@ class NodeSignalingServerProtocol {
         client1.node.on("signals/server/new-initiator-ice-candidate", async (iceCandidate) => {
 
             try {
-                let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById( iceCandidate.connectionId );
+                let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById( iceCandidate.connectionId );
 
                 if (connection === null) {
                     console.error("signals/server/new-answer-ice-candidate connection is empty", iceCandidate.connectionId);
@@ -212,7 +212,7 @@ class NodeSignalingServerProtocol {
         client1.node.on("signals/client/initiator/receive-ice-candidate/answer", async (answer) => {
             try {
 
-                let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById(answer.connectionId);
+                let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(answer.connectionId);
 
                 if (connection === null) {
                     console.error("signals/server/new-answer-ice-candidate connection is empty", answer.connectionId);
@@ -242,7 +242,7 @@ class NodeSignalingServerProtocol {
         client2.node.on("signals/client/answer/receive-initiator-signal/answer", (answer)=>{
 
             try {
-                let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById(answer.connectionId);
+                let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(answer.connectionId);
 
                 if (connection === null){
                     console.error("signals/client/answer/receive-initiator-signal/answer connection is empty", answer.connectionId);
@@ -283,7 +283,7 @@ class NodeSignalingServerProtocol {
         client2.node.on("signals/server/new-answer-ice-candidate", async (iceCandidate) => {
 
             try {
-                let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById(iceCandidate.connectionId);
+                let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(iceCandidate.connectionId);
 
                 if (connection === null) {
                     console.error("signals/server/new-answer-ice-candidate connection is empty", iceCandidate.connectionId);
@@ -321,7 +321,7 @@ class NodeSignalingServerProtocol {
 
             try {
 
-                let connection = SignalingServerRoomList.searchSignalingServerRoomConnectionById(answer.connectionId);
+                let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(answer.connectionId);
 
                 if (connection === null) {
                     console.error("signals/server/new-initiator-ice-candidate/answer", answer.connectionId);
@@ -353,13 +353,13 @@ class NodeSignalingServerProtocol {
 
             if (client1 === null || client2 === null) return false;
 
-            let previousEstablishedConnection = SignalingServerRoomList.searchSignalingServerRoomConnection(client1, client2);
+            let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(client1, client2);
 
             if (previousEstablishedConnection === null
                 || (previousEstablishedConnection.checkLastTimeChecked(10 * 1000) && [SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionNotEstablished].indexOf( previousEstablishedConnection.status ) !== -1   )
                 || (previousEstablishedConnection.checkLastTimeChecked(10 * 1000) && [SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionError].indexOf( previousEstablishedConnection.status ) !== -1 )) {
 
-                let connection = SignalingServerRoomList.registerSignalingServerRoomConnection(client1, client2, SignalingServerRoomConnectionObject.ConnectionStatus.initiatorSignalGenerating);
+                let connection = SignalingServerRoomListConnections.registerSignalingServerRoomConnection(client1, client2, SignalingServerRoomConnectionObject.ConnectionStatus.initiatorSignalGenerating);
 
                 // Step1, send the request to generate the INITIATOR SIGNAL
                 client1.node.sendRequest("signals/client/initiator/generate-initiator-signal", {
@@ -381,7 +381,7 @@ class NodeSignalingServerProtocol {
 
     _clientIsNotAcceptingAnymoreWebPeers(client, connection){
 
-        SignalingServerRoomList.removeServerRoomConnection(connection);
+        SignalingServerRoomListConnections.removeServerRoomConnection(connection);
         client.acceptWebPeers = false;
 
     }

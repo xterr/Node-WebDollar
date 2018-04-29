@@ -1,6 +1,8 @@
 import NodesList from 'node/lists/nodes-list'
 import NodeSignalingServerWaitlistObject from "./Node-Signaling-Server-Waitlist-Object"
 import NodeSignalingServerProtocol from "./../Node-Signaling-Server-Protocol"
+import SignalingServerRoomListConnections from '../signaling-server-room/Signaling-Server-Room-List-Connections'
+import NodeSignalingServerWaitlistObjectType from "./Node-Signaling-Server-Waitlist-Object-Type"
 
 class NodeSignalingServerService{
 
@@ -100,9 +102,39 @@ class NodeSignalingServerService{
         setTimeout(this._connectWebPeers.bind(this), 2000);
     }
 
-    recalculateSignalingWaitlistType(client){
+    recalculateSignalingWaitlistType(signalingWaitlistClient1){
 
-        for (let i=0; client.)
+        try{
+
+            for (let i=0; i<SignalingServerRoomListConnections.list.length; i++){
+
+                let client1, client2;
+
+                if (SignalingServerRoomListConnections.list[i].client1 === signalingWaitlistClient1 ){
+                    client1 = SignalingServerRoomListConnections.list[i].client1;
+                    client2 = SignalingServerRoomListConnections.list[i].client2;
+                } else
+                if (SignalingServerRoomListConnections.list[i].client2 === signalingWaitlistClient1 ){
+                    client1 = SignalingServerRoomListConnections.list[i].client2;
+                    client2 = SignalingServerRoomListConnections.list[i].client1;
+                }
+
+                if (client1 !== undefined){
+
+                    let signalingWaitlistClient2 = this.searchNodeSignalingServerWaitlist(client2);
+
+                    if (signalingWaitlistClient1.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER && signalingWaitlistClient2.type){
+
+                    }
+
+                }
+
+            }
+
+        }catch (exception){
+
+        }
+
 
     }
 
