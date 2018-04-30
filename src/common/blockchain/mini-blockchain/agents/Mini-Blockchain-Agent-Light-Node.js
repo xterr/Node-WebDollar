@@ -27,27 +27,22 @@ class MiniBlockchainAgentLightNode extends inheritAgentClass{
         setInterval( () => {
 
             if (this.blockchain.proofPi !== null)
-                if ( new Date().getTime() - this.blockchain.proofPi.date.getTime() >= consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK *1000 * 2) {
-                    if (Math.random() < 2*WEBRTC_MINIMUM_LIGHT_PROBABILITY && this.status === AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC)
+                if ( new Date().getTime() - this.blockchain.proofPi.date.getTime() >= consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK *1000 * 3)
+                    if ( NodesList.countNodesByConnectionType( CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET ) === 0 )
                         Blockchain.synchronizeBlockchain(); //let's synchronize again
-                }
 
         }, (consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK - 10) * 1000);
 
-        this._lastBlocks = undefined;
-        setInterval(()=>{
 
-            if (this.blockchain.blocks.length > 0){
+        NodesList.emitter.on("nodes-list/disconnected", async (node) => {
 
-                if (this._lastBlocks !== undefined)
-                    if (this._lastBlocks === this.blockchain.blocks.length){
-                        location.reload();
-                    }
+            if (node.connectionType === CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET){
 
-                this._lastBlocks = this.blockchain.blocks.length;
+                this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC;
+
             }
 
-        }, consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK * 10 * 1000)
+        });
 
     }
 
@@ -79,28 +74,6 @@ class MiniBlockchainAgentLightNode extends inheritAgentClass{
 
         NodesList.emitter.on("nodes-list/connected", async (result) => {
 
-            let webrtc = NodesList.countNodesByConnectionType(CONNECTION_TYPE.CONNECTION_WEBRTC);
-
-            if ( webrtc > WEBRTC_MINIMUM_LIGHT) {
-                //let's disconnect from full nodes
-
-                if ( this.status !== AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC ) {
-
-                    this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC;
-
-                    if (Math.random() > WEBRTC_MINIMUM_LIGHT_PROBABILITY + 0.15) // most will disconnect from full nodes
-                        NodesList.disconnectAllNodes(CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET);
-
-                }
-
-            }
-
-            if ( webrtc > WEBRTC_MINIMUM_LIGHT + 2) {
-
-                if (Math.random() <= 0.1)
-                    NodesList.disconnectAllNodes(CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET);
-
-            }
 
         });
     }

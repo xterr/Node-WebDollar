@@ -27,21 +27,3 @@ sleep 5;
 pm2 restart npm --name "8082" --update-env
 
 sleep 15;
-
-SERVER_PORT=8083 INSTANCE_PREFIX=8083 pm2 start npm -- run start
-sleep 5;
-pm2 restart npm --name "8083" --update-env
-
-sleep 15;
-
-SERVER_PORT=8084 INSTANCE_PREFIX=8084 pm2 start npm -- run start
-sleep 5;
-pm2 restart npm --name "8084" --update-env
-
-sleep 15;
-
-SERVER_PORT=8085 INSTANCE_PREFIX=8085 pm2 start npm -- run start
-sleep 5;
-pm2 restart npm --name "8085" --update-env
-
-sleep 15;

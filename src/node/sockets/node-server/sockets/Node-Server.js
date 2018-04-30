@@ -43,7 +43,7 @@ class NodeServer {
 
             server.on("connection", socket => {
 
-                SocketExtend.extendSocket(socket, socket.request.connection.remoteAddress, socket.request.connection.remotePort, undefined, 1);
+                SocketExtend.extendSocket( socket, socket.request.connection.remoteAddress, socket.request.connection.remotePort, undefined, 1 );
 
                 console.warn('New connection from ' + socket.node.sckAddress.getAddress(true) );
 
@@ -69,6 +69,7 @@ class NodeServer {
                     console.error( "Couldn't open server on port ", port, " try next port") ;
                     process.exit(1);
                 }
+
             } catch(Exception){
                 console.error("Error Calling node_server.listen", Exception);
             }

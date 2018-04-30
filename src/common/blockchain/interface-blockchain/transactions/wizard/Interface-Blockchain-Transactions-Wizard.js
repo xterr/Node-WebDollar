@@ -27,7 +27,9 @@ class InterfaceBlockchainTransactionsWizard{
         }
 
         try {
+
             if (typeof fee ==='string') fee = parseInt(fee);
+
         } catch (exception){
 
             if (typeof exception === "object" && exception.message !== undefined) exception = exception.message;

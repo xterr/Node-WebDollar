@@ -239,7 +239,7 @@ consts.SETTINGS = {
             },
 
             SERVER: {
-                MAXIMUM_CONNECTIONS_FROM_BROWSER: 100,
+                MAXIMUM_CONNECTIONS_FROM_BROWSER: 40,
                 MAXIMUM_CONNECTIONS_FROM_TERMINAL: 10,
             },
 
@@ -248,7 +248,7 @@ consts.SETTINGS = {
             },
 
             FORKS:{
-                MAXIMUM_BLOCKS_TO_DOWNLOAD: 50,
+                MAXIMUM_BLOCKS_TO_DOWNLOAD: 20,
             },
 
             TIMEOUT: {
@@ -279,10 +279,10 @@ if ( consts.DEBUG === true ){
     consts.SETTINGS.NODE.SSL = false;
     consts.MINING_POOL.MINING.MAXIMUM_BLOCKS_TO_MINE_BEFORE_ERROR = 10000;
 
-    consts.SETTINGS.NODE.PORT = 8085;
+    consts.SETTINGS.NODE.PORT = 9095;
 
     FallBackNodesList.nodes = [{
-        "addr": ["127.0.0.1:8085"],
+        "addr": ["webdollar.ddns.net:9095"],
     }];
 }
 

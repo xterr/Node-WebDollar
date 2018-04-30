@@ -1,8 +1,11 @@
+import NodeSignalingServerWaitlistObjectType from "./Node-Signaling-Server-Waitlist-Object-Type"
+
 class NodeSignalingServerWaitlistObject{
 
     constructor(socket, acceptWebPeers){
 
         this.socket = socket;
+        this.type = NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE;
 
         this.acceptWebPeers = acceptWebPeers;
 
@@ -20,6 +23,8 @@ class NodeSignalingServerWaitlistObject{
         return this._acceptWebPeers;
 
     }
+
+
 
 }
 
