@@ -134,7 +134,7 @@ class NodeSignalingServerService{
 
 
                 let connection = SignalingServerRoomListConnections.list[i];
-                if (connection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished)
+                if (connection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished && connection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionAlreadyConnected )
                     continue;
 
                 let client1, client2;
@@ -143,7 +143,7 @@ class NodeSignalingServerService{
                     client1 = SignalingServerRoomListConnections.list[i].client1;
                     client2 = SignalingServerRoomListConnections.list[i].client2;
                 } else
-                if (connection.list[i].client2 === signalingWaitlistClient1.socket ){
+                if (connection.client2 === signalingWaitlistClient1.socket ){
                     client1 = SignalingServerRoomListConnections.list[i].client2;
                     client2 = SignalingServerRoomListConnections.list[i].client1;
                 }

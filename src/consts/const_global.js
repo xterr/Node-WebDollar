@@ -278,10 +278,10 @@ if ( consts.DEBUG === true ){
     consts.SETTINGS.NODE.SSL = false;
     consts.MINING_POOL.MINING.MAXIMUM_BLOCKS_TO_MINE_BEFORE_ERROR = 10000;
 
-    consts.SETTINGS.NODE.PORT = 2095;
+    consts.SETTINGS.NODE.PORT = 9095;
 
     FallBackNodesList.nodes = [{
-        "addr": ["webdollar.ddns.net:2095"],
+        "addr": ["webdollar.ddns.net:9095"],
     }];
 }
 
