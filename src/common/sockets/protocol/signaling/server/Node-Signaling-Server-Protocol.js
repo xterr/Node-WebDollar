@@ -357,15 +357,23 @@ class NodeSignalingServerProtocol {
 
     connectWebPeer(client1, client2){
 
-        try {
+        if (client1 === null || client2 === null) return false;
 
-            if (client1 === null || client2 === null) return false;
+        try {
 
             let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(client1, client2);
 
             if (previousEstablishedConnection === null
                 || (previousEstablishedConnection.checkLastTimeChecked(10 * 1000) && [SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionNotEstablished].indexOf( previousEstablishedConnection.status ) !== -1   )
                 || (previousEstablishedConnection.checkLastTimeChecked(10 * 1000) && [SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionError].indexOf( previousEstablishedConnection.status ) !== -1 )) {
+
+                //shuffling them, the sockets to change the orders
+
+                if (Math.random() > 0.5) {
+                    let aux = client1;
+                    client1 = client2;
+                    client2 = aux;
+                }
 
                 let connection = SignalingServerRoomListConnections.registerSignalingServerRoomConnection(client1, client2, SignalingServerRoomConnectionObject.ConnectionStatus.initiatorSignalGenerating);
 
@@ -379,12 +387,15 @@ class NodeSignalingServerProtocol {
 
                 });
 
+                return true;
+
             }
 
         } catch (exception){
             console.error("connectWebPeer exception ", exception);
         }
 
+        return false;
     }
 
     _clientIsNotAcceptingAnymoreWebPeers(client, connection){

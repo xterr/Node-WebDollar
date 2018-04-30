@@ -70,45 +70,38 @@ class NodeSignalingServerService{
         //TODO instead of using Interval, to use an event based Protocol
 
         //mixing users
-        for (let i = 0; i < this.waitlist.length; i++) {
+        for (let i = 0; i < this.waitlist.length; i++)
 
-            if (!this.waitlist[i].acceptWebPeers)
-                continue;
+            if (this.waitlist[i].acceptWebPeers && this.waitlist[i].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE) {
 
-            for (let j = i+1; j < this.waitlist.length; j++){
-
-                if (!this.waitlist[j].acceptWebPeers)
-                    continue;
+                let connected = false;
 
                 // Step 0 , finding two different clients
-                // clients are already already with socket
+                for (let j = 0; j < this.waitlist.length; j++)
+                    if (this.waitlist[j].acceptWebPeers && this.waitlist[i].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER) {
 
-                //shuffling them, the sockets to change the orders
-                let client1, client2 = null;
+                        if (!NodeSignalingServerProtocol.connectWebPeer( this.waitlist[i].socket, this.waitlist[j].socket ))
+                            continue;
 
-                if (Math.random() > 0.5) {
+                        connected  = true;
+                    }
 
-                    client1 = this.waitlist[i];
-                    client2 = this.waitlist[j];
+                if (!connected) {
 
-                } else {
+                    for (let j = 0; j < this.waitlist.length; j++)
+                        if (this.waitlist[j].acceptWebPeers && this.waitlist[i].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE) {
 
-                    client1 = this.waitlist[j];
-                    client2 = this.waitlist[i];
+                            NodeSignalingServerProtocol.connectWebPeer( this.waitlist[i].socket, this.waitlist[j].socket );
+
+                        }
 
                 }
 
-                if (client1.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER && client2.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER){
-                    continue;
-                }
-
-                NodeSignalingServerProtocol.connectWebPeer(client1.socket, client2.socket);
 
             }
-        }
 
 
-        setTimeout(this._connectWebPeers.bind(this), 2000);
+        setTimeout(this._connectWebPeers.bind(this), 2500);
     }
 
     recalculateSignalingWaitlistTypeFromConnection(connection) {
