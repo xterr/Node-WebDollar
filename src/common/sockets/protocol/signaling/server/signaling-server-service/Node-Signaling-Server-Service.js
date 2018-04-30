@@ -139,16 +139,16 @@ class NodeSignalingServerService{
 
                 let client1, client2;
 
-                if (SignalingServerRoomListConnections.list[i].client1 === signalingWaitlistClient1 ){
+                if (connection.client1 === signalingWaitlistClient1.socket ){
                     client1 = SignalingServerRoomListConnections.list[i].client1;
                     client2 = SignalingServerRoomListConnections.list[i].client2;
                 } else
-                if (SignalingServerRoomListConnections.list[i].client2 === signalingWaitlistClient1 ){
+                if (connection.list[i].client2 === signalingWaitlistClient1.socket ){
                     client1 = SignalingServerRoomListConnections.list[i].client2;
                     client2 = SignalingServerRoomListConnections.list[i].client1;
                 }
 
-                if (client1 !== undefined){
+                if (client2 !== undefined){
 
                     let signalingWaitlistClient2 = this.searchNodeSignalingServerWaitlist(client2);
 

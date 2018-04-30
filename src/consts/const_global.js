@@ -281,7 +281,7 @@ if ( consts.DEBUG === true ){
     consts.SETTINGS.NODE.PORT = 2095;
 
     FallBackNodesList.nodes = [{
-        "addr": ["192.168.2.8:2095"],
+        "addr": ["webdollar.ddns.net:2095"],
     }];
 }
 
