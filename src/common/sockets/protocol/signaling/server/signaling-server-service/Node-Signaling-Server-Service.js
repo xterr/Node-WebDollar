@@ -113,15 +113,17 @@ class NodeSignalingServerService{
 
     recalculateSignalingWaitlistTypeFromConnection(connection) {
 
-        let waitlist = this.findNodeSignalingServerWaitlist(connection.client1);
+        let waitlist = this.searchNodeSignalingServerWaitlist(connection.client1);
         this.recalculateSignalingWaitlistType(waitlist);
 
-        waitlist = this.findNodeSignalingServerWaitlist(connection.client2);
+        waitlist = this.searchNodeSignalingServerWaitlist(connection.client2);
         this.recalculateSignalingWaitlistType(waitlist);
 
     }
 
     recalculateSignalingWaitlistType(signalingWaitlistClient1){
+
+        if (signalingWaitlistClient1 === null) return;
 
         try{
 

@@ -66,7 +66,7 @@ class NodeSignalingServerProtocol {
         socket.node.on("signals/server/connections/was-established-successfully", (data) => {
 
             try {
-                if (!data.connectionId) {
+                if (data.connectionId !== undefined) {
 
                     let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(data.connectionId);
 
