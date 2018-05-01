@@ -90,7 +90,7 @@ class NodeSignalingServerService{
                 for (let j = 0; j < this.waitlistMasters.length; j++)
                     if (this.waitlistMasters[j].acceptWebPeers) {
 
-                        let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlistSlaves[i], this.waitlistMasters[j]);
+                        let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlistSlaves[i].socket, this.waitlistMasters[j].socket);
 
                         if (previousEstablishedConnection === null || previousEstablishedConnection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionError )
                             master = true;
@@ -104,8 +104,8 @@ class NodeSignalingServerService{
                     for (let j = 0; j < this.waitlistSlaves.length; j++)
                         if (this.waitlistSlaves[j].acceptWebPeers) {
 
-                            let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlistSlaves[i], this.waitlistSlaves[j]);
-                            NodeSignalingServerProtocol.connectWebPeer( this.waitlistSlaves[i].socket, this.waitlistMasters[j].socket, previousEstablishedConnection );
+                            let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlistSlaves[i].socket, this.waitlistSlaves[j].socket);
+                            NodeSignalingServerProtocol.connectWebPeer( this.waitlistSlaves[i].socket, this.waitlistSlaves[j].socket, previousEstablishedConnection );
 
                         }
 

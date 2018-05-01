@@ -53,13 +53,13 @@ class SignalingServerRoomListConnections {
 
     searchSignalingServerRoomConnection(client1, client2) {
 
-        client1 = client1.socket.sckAddress.uuid;
-        client2 = client2.socket.sckAddress.uuid;
+        client1 = client1.node.sckAddress.uuid;
+        client2 = client2.node.sckAddress.uuid;
 
         //previous established connection
         for (let i = 0; i < this.list.length; i++)
-            if ( (this.list[i].client1.sckAddress.uuid === client1 && this.list[i].client2.sckAddress.uuid === client2) ||
-                 (this.list[i].client1.sckAddress.uuid === client2 && this.list[i].client2.sckAddress.uuid === client1))
+            if ( (this.list[i].client1.node.sckAddress.uuid === client1 && this.list[i].client2.node.sckAddress.uuid === client2) ||
+                 (this.list[i].client1.node.sckAddress.uuid === client2 && this.list[i].client2.node.sckAddress.uuid === client1))
 
                 return this.list[i];
 
@@ -83,30 +83,24 @@ class SignalingServerRoomListConnections {
 
         for (let i = this.list.length - 1; i >= 0; i--) {
 
-            if (this.list[i].client1.socket.node.sckAddress.uuid === uuid) {
+            if (this.list[i].client1.node.sckAddress.uuid === uuid) {
                 this.list[i].client1 = {
-                    socket: {
-                        node: {
-                            sckAddress: {
-                                uuid: uuid,
-                            },
-                        }
+                    node: {
+                        sckAddress: {
+                            uuid: uuid,
+                        },
                     },
                     deleted: true,
                 };
             }
 
-            if (this.list[i].client2.socket.node.sckAddress.uuid === uuid) {
+            if (this.list[i].client2.node.sckAddress.uuid === uuid) {
                 this.list[i].client2 = {
-
-                    socket: {
-                        node: {
-                            sckAddress: {
-                                uuid: uuid,
-                            },
-                        }
+                    node: {
+                        sckAddress: {
+                            uuid: uuid,
+                        },
                     },
-
                     deleted: true,
                 };
             }
