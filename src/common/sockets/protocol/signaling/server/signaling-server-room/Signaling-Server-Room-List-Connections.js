@@ -1,6 +1,7 @@
 import SocketAddress from 'common/sockets/socket-address'
-import SignalingServerRoomConnectionObject from './Signaling-Server-Room-Connection-Object';
 import NodesList from 'node/lists/nodes-list'
+import NodesWaitlist from 'node/lists/waitlist/nodes-waitlist'
+import SignalingServerRoomConnectionObject from './Signaling-Server-Room-Connection-Object';
 import CONNECTIONS_TYPE from "node/lists/types/Connections-Type"
 import NODES_TYPE from "node/lists/types/Nodes-Type"
 /*
@@ -50,18 +51,12 @@ class SignalingServerRoomListConnections {
         return connection;
     }
 
-    searchSignalingServerRoomConnection(client1, client2, skipReverse) {
+    searchSignalingServerRoomConnection(client1, client2) {
 
         //previous established connection
         for (let i = 0; i < this.list.length; i++)
-            if ((this.list[i].client1 === client1 && this.list[i].client2 === client2) || (this.list[i].client1 === client2 && this.list[i].client2 === client1)) {
-
+            if ((this.list[i].client1 === client1 && this.list[i].client2 === client2) || (this.list[i].client1 === client2 && this.list[i].client2 === client1))
                 return this.list[i];
-
-            }
-
-        if ( skipReverse === undefined || skipReverse === false)
-            return this.searchSignalingServerRoomConnection(client2, client1, true);
 
         return null;
     }

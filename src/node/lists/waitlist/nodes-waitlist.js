@@ -9,6 +9,7 @@ import Blockchain from "main-blockchain/Blockchain";
 import AGENT_STATUS from "common/blockchain/interface-blockchain/agents/Agent-Status";
 import VersionCheckerHelper from "common/utils/helpers/Version-Checker-Helper"
 
+
 const EventEmitter = require('events');
 
 class NodesWaitlist {
@@ -34,7 +35,6 @@ class NodesWaitlist {
         this.MAX_ERROR_TRIALS = 100;
 
     }
-
 
     startConnecting(){
 

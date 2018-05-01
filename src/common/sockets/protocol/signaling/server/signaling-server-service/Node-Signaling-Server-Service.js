@@ -74,24 +74,28 @@ class NodeSignalingServerService{
 
             if (this.waitlist[i].acceptWebPeers && this.waitlist[i].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE) {
 
-                let connected = false;
+                let master = false;
 
                 // Step 0 , finding two different clients
                 for (let j = 0; j < this.waitlist.length; j++)
-                    if (this.waitlist[j].acceptWebPeers && this.waitlist[i].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER) {
+                    if (this.waitlist[j].acceptWebPeers && this.waitlist[j].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER) {
 
-                        if (!NodeSignalingServerProtocol.connectWebPeer( this.waitlist[i].socket, this.waitlist[j].socket ))
-                            continue;
+                        let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlist[i], this.waitlist[j]);
 
-                        connected  = true;
+                        if (previousEstablishedConnection === null || previousEstablishedConnection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionError )
+                            master = true;
+
+                        NodeSignalingServerProtocol.connectWebPeer( this.waitlist[i].socket, this.waitlist[j].socket , previousEstablishedConnection );
+
                     }
 
-                if (!connected) {
+                if (! master ) {
 
                     for (let j = 0; j < this.waitlist.length; j++)
-                        if (this.waitlist[j].acceptWebPeers && this.waitlist[i].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE) {
+                        if (this.waitlist[j].acceptWebPeers && this.waitlist[j].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE) {
 
-                            NodeSignalingServerProtocol.connectWebPeer( this.waitlist[i].socket, this.waitlist[j].socket );
+                            let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlist[i], this.waitlist[j]);
+                            NodeSignalingServerProtocol.connectWebPeer( this.waitlist[i].socket, this.waitlist[j].socket, previousEstablishedConnection );
 
                         }
 
@@ -157,14 +161,10 @@ class NodeSignalingServerService{
 
             if (signalingWaitlistClient1.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE){
 
-                if (countMasters >= 1){
+                if (countMasters >= 2){
 
-                    if (countMasters > 2 || !signalingWaitlistClient1.acceptWebPeers ){
-
-                        signalingWaitlistClient1.socket.disconnect();
-                        return;
-
-                    }
+                    signalingWaitlistClient1.socket.disconnect();
+                    return;
 
                 } else if (countSlaves > 4 || !signalingWaitlistClient1.acceptWebPeers){
 
