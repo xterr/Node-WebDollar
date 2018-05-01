@@ -9,20 +9,25 @@ class NodeSignalingServerService{
 
     constructor(){
 
-        this.waitlist = [];
+        this.waitlistSlaves = []; //slaves
+        this.waitlistMasters = [];
+
         this.started = false;
 
-        NodesList.emitter.on("nodes-list/disconnected", async (nodesListObject) => {
-            await this._desinitializeNode(nodesListObject.socket);
+        NodesList.emitter.on("nodes-list/disconnected", (nodesListObject) => {
+            this._deleteNode(nodesListObject.socket, this.waitlistMasters);
+            this._deleteNode(nodesListObject.socket, this.waitlistSlaves);
         });
 
     }
 
-    _desinitializeNode(socket){
+    _deleteNode(socket, list){
 
-        for (let i=this.waitlist.length-1; i>=0; i--)
-            if ( this.waitlist[i].socket.node.sckAddress.matchAddress(socket.node.sckAddress, ["uuid"] ) ){
-                this.waitlist.splice(i,1);
+        if (socket === undefined) return;
+
+        for (let i=list.length-1; i>=0; i--)
+            if ( list[i].socket.node.sckAddress.uuid === socket.node.sckAddress.uuid) {
+                list.splice(i, 1);
                 return;
             }
 
@@ -34,7 +39,7 @@ class NodeSignalingServerService{
 
         if (waitlistObject === null) {
             waitlistObject = new NodeSignalingServerWaitlistObject(socket, acceptWebPeers, );
-            this.waitlist.push( waitlistObject )
+            this.waitlistSlaves.push( waitlistObject )
         }
 
         return waitlistObject;
@@ -50,17 +55,22 @@ class NodeSignalingServerService{
         this._connectWebPeers();
     }
 
-    findNodeSignalingServerWaitlist(socket){
-        for (let i=0; i<this.waitlist.length; i++)
-            if (this.waitlist[i].socket.node.sckAddress.matchAddress(socket.node.sckAddress, ["uuid"])){
+    _findNodeSignalingServerWaitlist(socket, list){
+
+        for (let i=0; i<list.length; i++)
+            if (list[i].socket.node.sckAddress.uuid === socket.node.sckAddress.uuid)
                 return i;
-            }
+
         return -1;
     }
 
-    searchNodeSignalingServerWaitlist(socket){
-        let pos = this.findNodeSignalingServerWaitlist(socket);
-        if (pos !== -1) return this.waitlist[pos];
+    searchNodeSignalingServerWaitlist( socket ){
+
+        let pos = this._findNodeSignalingServerWaitlist(socket, this.waitlistMasters);
+        if (pos !== -1) return this.waitlistMasters[pos];
+
+        pos = this._findNodeSignalingServerWaitlist(socket, this.waitlistSlaves );
+        if (pos !== -1) return this.waitlistSlaves[pos];
 
         return null;
     }
@@ -70,32 +80,32 @@ class NodeSignalingServerService{
         //TODO instead of using Interval, to use an event based Protocol
 
         //mixing users
-        for (let i = 0; i < this.waitlist.length; i++)
+        for (let i = 0; i < this.waitlistSlaves.length; i++)
 
-            if (this.waitlist[i].acceptWebPeers && this.waitlist[i].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE) {
+            if (this.waitlistSlaves[i].acceptWebPeers) {
 
                 let master = false;
 
                 // Step 0 , finding two different clients
-                for (let j = 0; j < this.waitlist.length; j++)
-                    if (this.waitlist[j].acceptWebPeers && this.waitlist[j].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER) {
+                for (let j = 0; j < this.waitlistMasters.length; j++)
+                    if (this.waitlistMasters[j].acceptWebPeers) {
 
-                        let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlist[i], this.waitlist[j]);
+                        let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlistSlaves[i], this.waitlistMasters[j]);
 
                         if (previousEstablishedConnection === null || previousEstablishedConnection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionError )
                             master = true;
 
-                        NodeSignalingServerProtocol.connectWebPeer( this.waitlist[i].socket, this.waitlist[j].socket , previousEstablishedConnection );
+                        NodeSignalingServerProtocol.connectWebPeer( this.waitlistSlaves[i].socket, this.waitlistMasters[j].socket, previousEstablishedConnection );
 
                     }
 
                 if (! master ) {
 
-                    for (let j = 0; j < this.waitlist.length; j++)
-                        if (this.waitlist[j].acceptWebPeers && this.waitlist[j].type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE) {
+                    for (let j = 0; j < this.waitlistSlaves.length; j++)
+                        if (this.waitlistSlaves[j].acceptWebPeers) {
 
-                            let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlist[i], this.waitlist[j]);
-                            NodeSignalingServerProtocol.connectWebPeer( this.waitlist[i].socket, this.waitlist[j].socket, previousEstablishedConnection );
+                            let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlistSlaves[i], this.waitlistSlaves[j]);
+                            NodeSignalingServerProtocol.connectWebPeer( this.waitlistSlaves[i].socket, this.waitlistMasters[j].socket, previousEstablishedConnection );
 
                         }
 
@@ -163,16 +173,31 @@ class NodeSignalingServerService{
 
                 if (countMasters >= 2){
 
+                    //slave connected to multiple masters
+
                     signalingWaitlistClient1.socket.disconnect();
                     return;
 
                 } else if (countSlaves > 4 || !signalingWaitlistClient1.acceptWebPeers){
 
                     signalingWaitlistClient1.type = NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER;
+                    this.waitlistMasters.push(signalingWaitlistClient1);
 
                 }
 
             } else if (signalingWaitlistClient1.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER){
+
+                //converting master to slave
+
+                if (countMasters >= 2){
+
+                    this._deleteNode(signalingWaitlistClient1.socket, this.waitlistMasters);
+                    this.waitlistSlaves.push(signalingWaitlistClient1);
+
+                    signalingWaitlistClient1.socket.disconnect();
+
+                }
+
 
             }
 

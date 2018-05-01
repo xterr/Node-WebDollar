@@ -47,7 +47,7 @@ class NodeSignalingServerProtocol {
 
                     connection.status = SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionNotEstablished;
 
-                    let waitlist = NodeSignalingServerService.searchNodeSignalingServerWaitlist(socket);
+                    let waitlist = NodeSignalingServerService.searchNodeSignalingServerWaitlist( socket );
 
                     if (waitlist !== null)
                         waitlist.acceptWebPeers = true;

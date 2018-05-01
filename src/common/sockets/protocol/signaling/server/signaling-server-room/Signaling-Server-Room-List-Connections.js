@@ -53,9 +53,14 @@ class SignalingServerRoomListConnections {
 
     searchSignalingServerRoomConnection(client1, client2) {
 
+        client1 = client1.socket.sckAddress.uuid;
+        client2 = client2.socket.sckAddress.uuid;
+
         //previous established connection
         for (let i = 0; i < this.list.length; i++)
-            if ((this.list[i].client1 === client1 && this.list[i].client2 === client2) || (this.list[i].client1 === client2 && this.list[i].client2 === client1))
+            if ( (this.list[i].client1.sckAddress.uuid === client1 && this.list[i].client2.sckAddress.uuid === client2) ||
+                 (this.list[i].client1.sckAddress.uuid === client2 && this.list[i].client2.sckAddress.uuid === client1))
+
                 return this.list[i];
 
         return null;
@@ -72,12 +77,45 @@ class SignalingServerRoomListConnections {
 
     _disconnectedNode(nodesListObject){
 
-        if ( [ CONNECTIONS_TYPE.CONNECTION_CLIENT_SOCKET, CONNECTIONS_TYPE.CONNECTION_WEBRTC].indexOf(nodesListObject.connectionType) )    // signaling service on webpeer
+        if ( [ CONNECTIONS_TYPE.CONNECTION_SERVER_SOCKET, CONNECTIONS_TYPE.CONNECTION_WEBRTC ].indexOf(nodesListObject.connectionType) < 0 ) return; // signaling service on webpeer
 
-            for (let i = this.list.length-1; i >= 0 ; i--)
-                if (this.list[i].client1 === nodesListObject.socket || this.list[i].client2 === nodesListObject.socket){
-                    this.list.splice(i, 1);
-                }
+         let uuid = nodesListObject.socket.node.sckAddress.uuid;
+
+        for (let i = this.list.length - 1; i >= 0; i--) {
+
+            if (this.list[i].client1.socket.node.sckAddress.uuid === uuid) {
+                this.list[i].client1 = {
+                    socket: {
+                        node: {
+                            sckAddress: {
+                                uuid: uuid,
+                            },
+                        }
+                    },
+                    deleted: true,
+                };
+            }
+
+            if (this.list[i].client2.socket.node.sckAddress.uuid === uuid) {
+                this.list[i].client2 = {
+
+                    socket: {
+                        node: {
+                            sckAddress: {
+                                uuid: uuid,
+                            },
+                        }
+                    },
+
+                    deleted: true,
+                };
+            }
+
+            if (this.list[i].client1.deleted === true && this.list[i].client2.deleted === true)
+                this.list.splice(i, 1);
+
+        }
+
 
     }
 
