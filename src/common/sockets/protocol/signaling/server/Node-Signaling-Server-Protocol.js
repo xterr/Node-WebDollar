@@ -47,12 +47,22 @@ class NodeSignalingServerProtocol {
 
                     connection.status = SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionNotEstablished;
 
+                    if (connection.client1.deleted === true || connection.client2.deleted === true){
+
+                        SignalingServerRoomListConnections.removeServerRoomConnection(connection.id);
+
+                        NodeSignalingServerService._recalculateSignalingWaitlistType(socket);
+
+                    }else{
+
+                        NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection)
+
+                    }
+
                     let waitlist = NodeSignalingServerService.searchNodeSignalingServerWaitlist( socket );
 
                     if (waitlist !== null)
                         waitlist.acceptWebPeers = true;
-
-                    NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection)
 
                 }
 
@@ -120,10 +130,12 @@ class NodeSignalingServerProtocol {
             try {
                 let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(initiatorAnswer.connectionId);
 
-                if (connection === null) {
+                if (connection === null || connection.client1.deleted === true || connection.client2.deleted === true) {
                     console.error("signals/client/initiator/generate-initiator-signal/answer connection is null");
                     return null;
                 }
+
+                if ( connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished || connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionAlreadyConnected ) return;
 
                 if (consts.DEBUG) console.warn("WEBRTC SERVER 1_1", connection.id);
 
@@ -151,6 +163,8 @@ class NodeSignalingServerProtocol {
 
                 }
 
+                NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection);
+
             } catch (exception) {
                 console.error("signals/client/initiator/generate-initiator-signal/answer exception", exception, initiatorAnswer);
             }
@@ -164,10 +178,12 @@ class NodeSignalingServerProtocol {
 
                 let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(result.connectionId);
 
-                if (connection === null){
+                if (connection === null || connection.client1.deleted === true || connection.client2.deleted === true ){
                     console.error("signals/client/initiator/join-answer-signal/answer connection is empty", result.connectionId);
                     return;
                 }
+
+                if ( connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished || connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionAlreadyConnected ) return;
 
                 if (consts.DEBUG) console.warn("WEBRTC SERVER 1_2", connection.id);
 
@@ -179,6 +195,8 @@ class NodeSignalingServerProtocol {
                     this._clientIsNotAcceptingAnymoreWebPeers(client1, connection);
                 else
                     connection.status = SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished;
+
+                NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection);
 
             } catch (exception){
                 console.error("signals/client/initiator/join-answer-signal/answer exception",exception,  result);
@@ -193,10 +211,12 @@ class NodeSignalingServerProtocol {
             try {
                 let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById( iceCandidate.connectionId );
 
-                if (connection === null) {
+                if (connection === null || connection.client1.deleted === true || connection.client2.deleted === true) {
                     console.error("signals/server/new-answer-ice-candidate connection is empty", iceCandidate.connectionId);
                     return;
                 }
+
+                if ( connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished || connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionAlreadyConnected ) return;
 
                 if (consts.DEBUG) console.warn("WEBRTC SERVER 1_3", connection.id);
 
@@ -210,6 +230,8 @@ class NodeSignalingServerProtocol {
                     remoteUUID: connection.client1.node.sckAddress.uuid,
                 });
 
+                NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection);
+
             } catch (exception){
                 console.error("signals/server/new-initiator-ice-candidate exception ", exception, iceCandidate);
             }
@@ -222,10 +244,12 @@ class NodeSignalingServerProtocol {
 
                 let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(answer.connectionId);
 
-                if (connection === null) {
+                if (connection === null || connection.client1.deleted === true || connection.client2.deleted === true) {
                     console.error("signals/server/new-answer-ice-candidate connection is empty", answer.connectionId);
                     return;
                 }
+
+                if ( connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished || connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionAlreadyConnected ) return;
 
                 if (consts.DEBUG) console.warn("WEBRTC SERVER 1_4", connection.id);
 
@@ -234,6 +258,8 @@ class NodeSignalingServerProtocol {
 
                 else if (answer.established === false && answer.message === "I can't accept WebPeers anymore")
                     this._clientIsNotAcceptingAnymoreWebPeers(client1, connection);
+
+                NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection);
 
             } catch (exception){
 
@@ -252,10 +278,12 @@ class NodeSignalingServerProtocol {
             try {
                 let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(answer.connectionId);
 
-                if (connection === null){
+                if (connection === null || connection.client1.deleted === true || connection.client2.deleted === true ){
                     console.error("signals/client/answer/receive-initiator-signal/answer connection is empty", answer.connectionId);
                     return;
                 }
+
+                if ( connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished || connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionAlreadyConnected ) return;
 
                 if (consts.DEBUG) console.warn("WEBRTC SERVER 2_1", connection.id);
 
@@ -280,6 +308,8 @@ class NodeSignalingServerProtocol {
                     });
                 }
 
+                NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection);
+
             } catch (exception){
                 console.error("signals/client/answer/receive-initiator-signal/answer exception", exception, answer);
             }
@@ -293,10 +323,12 @@ class NodeSignalingServerProtocol {
             try {
                 let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(iceCandidate.connectionId);
 
-                if (connection === null) {
+                if (connection === null  || connection.client1.deleted === true || connection.client2.deleted === true) {
                     console.error("signals/server/new-answer-ice-candidate connection is empty", iceCandidate.connectionId);
                     return;
                 }
+
+                if ( connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished || connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionAlreadyConnected ) return;
 
                 if (consts.DEBUG) console.warn("WEBRTC SERVER 2_2", connection.id);
 
@@ -315,6 +347,7 @@ class NodeSignalingServerProtocol {
 
                 });
 
+                NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection);
 
             } catch (exception){
                 console.error("signals/server/new-answer-ice-candidate exception ", exception, iceCandidate);
@@ -331,10 +364,12 @@ class NodeSignalingServerProtocol {
 
                 let connection = SignalingServerRoomListConnections.searchSignalingServerRoomConnectionById(answer.connectionId);
 
-                if (connection === null) {
+                if (connection === null  || connection.client1.deleted === true || connection.client2.deleted === true) {
                     console.error("signals/server/new-initiator-ice-candidate/answer", answer.connectionId);
                     return;
                 }
+
+                if ( connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished || connection.status === SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionAlreadyConnected ) return;
 
                 if (consts.DEBUG) console.warn("WEBRTC SERVER 2_3", connection.id);
 
@@ -343,6 +378,7 @@ class NodeSignalingServerProtocol {
                 else if (answer.established === false && answer.message === "I can't accept WebPeers anymore")
                     this._clientIsNotAcceptingAnymoreWebPeers(client2, connection);
 
+                NodeSignalingServerService.recalculateSignalingWaitlistTypeFromConnection(connection);
             } catch (exception){
 
             }

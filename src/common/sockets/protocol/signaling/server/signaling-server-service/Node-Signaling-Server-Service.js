@@ -19,6 +19,23 @@ class NodeSignalingServerService{
             this._deleteNode(nodesListObject.socket, this.waitlistSlaves);
         });
 
+        setInterval(()=>{
+
+            console.log("slaves", this.waitlistSlaves.length);
+            let string = "";
+            for (let i=0; i<this.waitlistSlaves.length; i++)
+                string += this.waitlistSlaves[i].socket.node.sckAddress.getAddress(false)+" ";
+            console.log(string);
+
+            console.log("master", this.waitlistMasters.length);
+            string = "";
+            for (let i=0; i<this.waitlistMasters.length; i++)
+                string += this.waitlistMasters[i].socket.node.sckAddress.getAddress(false)+" ";
+            console.log(string);
+
+            console.log("");console.log("");console.log("");
+        }, 3000)
+
     }
 
     _deleteNode(socket, list){
@@ -92,10 +109,11 @@ class NodeSignalingServerService{
 
                         let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlistSlaves[i].socket, this.waitlistMasters[j].socket);
 
-                        if (previousEstablishedConnection === null || previousEstablishedConnection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionError )
+                        if (previousEstablishedConnection === null || (previousEstablishedConnection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionError && previousEstablishedConnection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished) )
                             master = true;
 
-                        NodeSignalingServerProtocol.connectWebPeer( this.waitlistSlaves[i].socket, this.waitlistMasters[j].socket, previousEstablishedConnection );
+                        if (previousEstablishedConnection === null || previousEstablishedConnection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished)
+                            NodeSignalingServerProtocol.connectWebPeer( this.waitlistSlaves[i].socket, this.waitlistMasters[j].socket, previousEstablishedConnection );
 
                     }
 
@@ -105,7 +123,9 @@ class NodeSignalingServerService{
                         if (this.waitlistSlaves[j].acceptWebPeers) {
 
                             let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlistSlaves[i].socket, this.waitlistSlaves[j].socket);
-                            NodeSignalingServerProtocol.connectWebPeer( this.waitlistSlaves[i].socket, this.waitlistSlaves[j].socket, previousEstablishedConnection );
+
+                            if (previousEstablishedConnection === null || previousEstablishedConnection.status !== SignalingServerRoomConnectionObject.ConnectionStatus.peerConnectionEstablished)
+                                NodeSignalingServerProtocol.connectWebPeer( this.waitlistSlaves[i].socket, this.waitlistSlaves[j].socket, previousEstablishedConnection );
 
                         }
 
@@ -121,16 +141,18 @@ class NodeSignalingServerService{
     recalculateSignalingWaitlistTypeFromConnection(connection) {
 
         let waitlist = this.searchNodeSignalingServerWaitlist(connection.client1);
-        this.recalculateSignalingWaitlistType(waitlist);
+        this._recalculateSignalingWaitlistType(waitlist);
 
         waitlist = this.searchNodeSignalingServerWaitlist(connection.client2);
-        this.recalculateSignalingWaitlistType(waitlist);
+        this._recalculateSignalingWaitlistType(waitlist);
 
     }
 
-    recalculateSignalingWaitlistType(signalingWaitlistClient1){
+    _recalculateSignalingWaitlistType(signalingWaitlistClient1){
 
         if (signalingWaitlistClient1 === null) return;
+
+        let uuid = signalingWaitlistClient1.socket.node.sckAddress.uuid;
 
         try{
 
@@ -146,11 +168,11 @@ class NodeSignalingServerService{
 
                 let client1, client2;
 
-                if (connection.client1 === signalingWaitlistClient1.socket ){
+                if (connection.client1.node.sckAddress.uuid === uuid ){
                     client1 = SignalingServerRoomListConnections.list[i].client1;
                     client2 = SignalingServerRoomListConnections.list[i].client2;
                 } else
-                if (connection.client2 === signalingWaitlistClient1.socket ){
+                if (connection.client2.node.sckAddress.uuid === uuid ){
                     client1 = SignalingServerRoomListConnections.list[i].client2;
                     client2 = SignalingServerRoomListConnections.list[i].client1;
                 }
@@ -159,8 +181,10 @@ class NodeSignalingServerService{
 
                     let signalingWaitlistClient2 = this.searchNodeSignalingServerWaitlist(client2);
 
-                    if (signalingWaitlistClient2.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER)
-                        countMasters ++;
+                    if (signalingWaitlistClient2.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER) {
+                        console.log("signalingWaitlistClient2 master", signalingWaitlistClient2.socket.node.sckAddress.getAddress(false), signalingWaitlistClient2.socket.node.sckAddress.uuid )
+                        countMasters++;
+                    }
                     else
                     if (signalingWaitlistClient2.type === NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE)
                         countSlaves ++;
@@ -181,6 +205,8 @@ class NodeSignalingServerService{
                 } else if (countSlaves > 4 || !signalingWaitlistClient1.acceptWebPeers){
 
                     signalingWaitlistClient1.type = NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_MASTER;
+
+                    this._deleteNode(signalingWaitlistClient1.socket, this.waitlistSlaves);
                     this.waitlistMasters.push(signalingWaitlistClient1);
 
                 }
@@ -190,6 +216,8 @@ class NodeSignalingServerService{
                 //converting master to slave
 
                 if (countMasters >= 2){
+
+                    signalingWaitlistClient1.type = NodeSignalingServerWaitlistObjectType.NODE_SIGNALING_SERVER_WAITLIST_SLAVE;
 
                     this._deleteNode(signalingWaitlistClient1.socket, this.waitlistMasters);
                     this.waitlistSlaves.push(signalingWaitlistClient1);
