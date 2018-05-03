@@ -35,6 +35,8 @@ class NodeSignalingClientProtocol {
                 this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC;
 
                 let index = NodesWaitlist._findNodesWaitlist(socket.node.sckAddress, undefined, socket.node.connectionType );
+                if (index === 0) return; //already priority
+
                 if (index === -1) console.error("sync was not able to find full node");
 
                 let waitlist = NodesWaitlist.waitListFullNodes[index];
