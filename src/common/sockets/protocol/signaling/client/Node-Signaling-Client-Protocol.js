@@ -3,6 +3,9 @@ import consts from 'consts/const_global'
 import SignalingClientList from './signaling-client-list/signaling-client-list'
 import NodesList from 'node/lists/nodes-list'
 import NodeSignalingClientSerivce from "./signaling-client-service/Node-Signaling-Client-Service"
+import CONNECTION_TYPE from "node/lists/types/Connections-Type";
+import AGENT_STATUS from "common/blockchain/interface-blockchain/agents/Agent-Status";
+import NodesWaitlist from 'node/lists/waitlist/nodes-waitlist'
 
 class NodeSignalingClientProtocol {
 
@@ -24,6 +27,24 @@ class NodeSignalingClientProtocol {
     _initializeSignalingClientService1(socket){
 
         //TODO protocol to request to connect me with somebody
+
+        socket.node.on("signals/client/you-are-slave/sync", async (data) => {
+
+            if ( socket.node.connectionType === CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET && NodesList.nodes.length >= 2 ){
+
+                this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC;
+
+                let index = NodesWaitlist._findNodesWaitlist(socket.node.sckAddress, undefined, socket.node.connectionType );
+                if (index === -1) console.error("sync was not able to find full node");
+
+                let waitlist = NodesWaitlist.waitListFullNodes[index];
+                NodesWaitlist.waitListFullNodes.splice(index, 1);
+
+                NodesWaitlist.waitListFullNodes.unshift(waitlist);
+
+            }
+
+        });
 
         socket.node.on("signals/client/initiator/generate-initiator-signal", async (data) => {
 

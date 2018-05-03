@@ -7,6 +7,7 @@ import NodesList from 'node/lists/nodes-list';
 import CONNECTION_TYPE from "node/lists/types/Connections-Type";
 import Blockchain from "main-blockchain/Blockchain"
 import AGENT_STATUS from "common/blockchain/interface-blockchain/agents/Agent-Status";
+import NodesWaitlist from 'node/lists/waitlist/nodes-waitlist'
 
 let inheritAgentClass;
 
@@ -40,18 +41,6 @@ class MiniBlockchainAgentLightNode extends inheritAgentClass{
                 }
 
         }, (consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK - 10) * 1000);
-
-
-        NodesList.emitter.on("nodes-list/disconnected", async (node) => {
-
-            if ( node.connectionType === CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET && NodesList.nodes.length >= 2 ){
-
-                this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC;
-
-
-            }
-
-        });
 
     }
 
