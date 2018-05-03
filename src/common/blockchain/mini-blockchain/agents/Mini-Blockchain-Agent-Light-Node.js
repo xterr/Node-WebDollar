@@ -23,22 +23,31 @@ class MiniBlockchainAgentLightNode extends inheritAgentClass{
         super(blockchain);
 
         this.light = true;
+        this.prevAddress =  this.status;
 
         setInterval( () => {
 
-            if (this.blockchain.proofPi !== null)
-                if ( new Date().getTime() - this.blockchain.proofPi.date.getTime() >= consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK *1000 * 3)
-                    if ( NodesList.countNodesByConnectionType( CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET ) === 0 )
+            if (this.blockchain.proofPi !== null && this.status === AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC)
+                if ( new Date().getTime() - this.blockchain.proofPi.date.getTime() >= consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK *1000 * 3) {
+
+                    console.warn( this.status, AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC, "this.status === AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC" );
+
+                    if (NodesList.countNodesByConnectionType(CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET) === 0) {
+
                         Blockchain.synchronizeBlockchain(); //let's synchronize again
+
+                    }
+                }
 
         }, (consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK - 10) * 1000);
 
 
         NodesList.emitter.on("nodes-list/disconnected", async (node) => {
 
-            if (node.connectionType === CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET){
+            if ( node.connectionType === CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET && NodesList.nodes.length >= 2 ){
 
                 this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC;
+
 
             }
 
@@ -67,7 +76,7 @@ class MiniBlockchainAgentLightNode extends inheritAgentClass{
 
 
 
-            if ( NodesList.countNodesByConnectionType(CONNECTION_TYPE.CONNECTION_WEBRTC) < 3)
+            if ( NodesList.countNodesByConnectionType(CONNECTION_TYPE.CONNECTION_WEBRTC) <= 1)
                 Blockchain.synchronizeBlockchain(); //let's synchronize again
 
         });

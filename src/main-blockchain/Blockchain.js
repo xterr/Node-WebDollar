@@ -76,13 +76,15 @@ class Blockchain{
 
     async loadWallet(){
 
-        if (!this._walletLoaded) {
+        if ( ! this._walletLoaded ) {
+
             await this.Wallet.loadWallet();
 
             //starting mining
             await this.Mining.loadMinerAddress(this.Wallet.addresses[0], this.Wallet);
 
             this._walletLoaded = true;
+
         }
     }
 
@@ -90,7 +92,7 @@ class Blockchain{
 
         await this.loadWallet();
 
-        if (process.env.BROWSER) { //let's make a hash first
+        if ( process.env.BROWSER ) { //let's make a hash first
 
             StatusEvents.emit('blockchain/status', {message: "Loading Hashing Function"});
             await WebDollarCrypto.hashPOW(Buffer(32));
@@ -106,19 +108,25 @@ class Blockchain{
 
         await this.Agent.initializeStartAgentOnce();
 
-        if (process.env.BROWSER || !blockchainLoaded) {
+        if ( process.env.BROWSER || !blockchainLoaded) {
+
             //it tries synchronizing multiple times
             await this.synchronizeBlockchain(true);
+
         } else {
+
             this.synchronized = true;
+
         }
 
         this.loaded = true;
     }
 
     async startMining(){
+
         if (process.env.START_MINING || this._startMiningNextTimeSynchronized)
             this.Mining.startMining();
+
     }
 
     async startMiningInstantly(){

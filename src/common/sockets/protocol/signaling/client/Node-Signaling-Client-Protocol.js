@@ -82,7 +82,7 @@ class NodeSignalingClientProtocol {
 
                 if (data.remoteUUID === undefined || data.remoteUUID === null) throw { message: "remoteUUID was not specified" };
 
-                let webPeerSignalingClientListObject = SignalingClientList.searchWebPeerSignalingClientList(data.initiatorSignal, undefined, data.remoteUUID);
+                let webPeerSignalingClientListObject = SignalingClientList.searchWebPeerSignalingClientList(undefined, undefined, data.remoteUUID);
 
                 if (webPeerSignalingClientListObject === null) throw { message: "WebRTC Client was not found"};
 
@@ -115,7 +115,7 @@ class NodeSignalingClientProtocol {
                 if (data.iceCandidate === undefined)
                     throw {message: "data.iceCandidate 4 was not specified"};
 
-                let webPeerSignalingClientListObject = SignalingClientList.searchWebPeerSignalingClientList(data.initiatorSignal, undefined, data.remoteUUID);
+                let webPeerSignalingClientListObject = SignalingClientList.searchWebPeerSignalingClientList(undefined, undefined, data.remoteUUID);
 
                 if ( webPeerSignalingClientListObject === null ) throw { message: "WebRTC Client was not found"};
 
@@ -179,7 +179,7 @@ class NodeSignalingClientProtocol {
                 if (NodesList.searchNodeSocketByAddress(data.remoteUUID, 'all', ["uuid"]) !== null) //already connected in the past
                     throw {message: "Already connected"};
 
-                if (SignalingClientList.searchWebPeerSignalingClientList(data.initiatorSignal, undefined, data.remoteUUID) !== null)
+                if (SignalingClientList.searchWebPeerSignalingClientList(undefined, undefined, data.remoteUUID) !== null)
                     throw {message: "Already connected"};
 
                 let webPeer = this._searchWebPeerSignalingClientList2(socket, data);

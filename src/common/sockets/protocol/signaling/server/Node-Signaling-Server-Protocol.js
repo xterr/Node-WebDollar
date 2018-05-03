@@ -59,10 +59,7 @@ class NodeSignalingServerProtocol {
 
                     }
 
-                    let waitlist = NodeSignalingServerService.searchNodeSignalingServerWaitlist( socket );
-
-                    if (waitlist !== null)
-                        waitlist.acceptWebPeers = true;
+                    socket.node.signaling.acceptWebPeers = true;
 
                 }
 
@@ -433,7 +430,8 @@ class NodeSignalingServerProtocol {
     _clientIsNotAcceptingAnymoreWebPeers(client, connection){
 
         SignalingServerRoomListConnections.removeServerRoomConnection(connection);
-        client.acceptWebPeers = false;
+
+        client.node.signaling.acceptWebPeers = false;
 
     }
 
