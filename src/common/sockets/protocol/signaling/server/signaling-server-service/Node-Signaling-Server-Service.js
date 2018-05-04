@@ -104,13 +104,13 @@ class NodeSignalingServerService{
         //mixing users
         for (let i = 0; i < this.waitlistSlaves.length; i++)
 
-            if (this.waitlistSlaves[i].node.signaling.acceptWebPeers) {
+            if (this.waitlistSlaves[i].node.signaling.acceptWebPeers ) {
 
                 let master = false;
 
                 // Step 0 , finding two different clients
                 for (let j = 0; j < this.waitlistMasters.length; j++)
-                    if (this.waitlistMasters[j].node.signaling.acceptWebPeers) {
+                    if (this.waitlistMasters[j].node.signaling.acceptWebPeers ) {
 
                         let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlistSlaves[i], this.waitlistMasters[j]);
 
@@ -125,7 +125,7 @@ class NodeSignalingServerService{
                 if (! master ) {
 
                     for (let j = 0; j < this.waitlistSlaves.length; j++)
-                        if (this.waitlistSlaves[j].node.signaling.acceptWebPeers) {
+                        if ( this.waitlistSlaves[j].node.signaling.acceptWebPeers ) {
 
                             let previousEstablishedConnection = SignalingServerRoomListConnections.searchSignalingServerRoomConnection(this.waitlistSlaves[i], this.waitlistSlaves[j]);
 
@@ -156,6 +156,11 @@ class NodeSignalingServerService{
     _recalculateSignalingWaitlistType(client1){
 
         if (client1 === null) return;
+
+        if (process.env.BROWSER === undefined)
+            return;
+
+
 
         let uuid = client1.node.sckAddress.uuid;
 
@@ -207,10 +212,7 @@ class NodeSignalingServerService{
 
                     //slave connected to multiple masters
                     client1.node.sendRequest("signals/client/you-are-slave/sync", {});
-
-                    setTimeout(()=>{
-                        client1.disconnect();
-                    }, 1000);
+                    client1.disconnect();
 
                 } else if (countSlaves > 4 || !client1.node.signaling.acceptWebPeers){
 
@@ -232,11 +234,7 @@ class NodeSignalingServerService{
                     this.waitlistSlaves.push(client1);
                     this._deleteNode(client1, this.waitlistMasters);
 
-                    client1.node.sendRequest("signals/client/you-are-slave/sync", {});
-
-                    setTimeout(()=>{
-                        client1.disconnect();
-                    }, 1000);
+                    client1.disconnect();
 
                 }
 

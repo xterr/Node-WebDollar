@@ -1,22 +1,16 @@
 let InterfacePoolMiningWorker;
 
-if (process.env.BROWSER){
-
-    InterfacePoolMiningWorker = require ('./browser/Interface-Pool-Browser-Worker').default;
-
-}  else {
-
-    InterfacePoolMiningWorker = require ('./backbone/Interface-Pool-Backbone-Mining').default;
-
-}
+if (process.env.BROWSER)
+    InheritedPoolWorker = require("./browser/Interface-Pool-Browser-Worker").default;
+else
+    InheritedPoolWorker = require("./backbone/Interface-Pool-Backbone-Mining").default;
 
 class PoolMiningWorker extends InterfacePoolMiningWorker {
 
-    constructor() {
-
-        super();
-
+    constructor(miningFeeThreshold) {
+        super(miningFeeThreshold);
     }
+
 }
 
 export default PoolMiningWorker;

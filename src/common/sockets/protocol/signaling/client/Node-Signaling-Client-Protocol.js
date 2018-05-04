@@ -30,7 +30,7 @@ class NodeSignalingClientProtocol {
 
         socket.node.on("signals/client/you-are-slave/sync", async (data) => {
 
-            if ( socket.node.connectionType === CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET && NodesList.nodes.length >= 2 ){
+            if ( socket.node.connectionType === CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET && NodesList.countNodesByConnectionType(CONNECTION_TYPE.CONNECTION_WEBRTC) >= 2 ){
 
                 this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC;
 
@@ -44,6 +44,7 @@ class NodeSignalingClientProtocol {
 
                 NodesWaitlist.waitListFullNodes.unshift(waitlist);
 
+                socket.disconnect();
             }
 
         });

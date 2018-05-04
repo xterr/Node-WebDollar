@@ -10,6 +10,9 @@ class MinerProtocol {
         
         this.hashList = [];
 
+        this._miningData = {blockData: undefined, difficultyTarget: undefined};
+        
+        // this._miningWorker = new PoolMiningWorker();
     }
 
     _subscribeMiner(nodesListObject){
