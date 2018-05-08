@@ -6,7 +6,7 @@
 // TUTORIAL BASED ON https://www.scaledrone.com/blog/posts/webrtc-chat-tutorial
 
 const EventEmitter = require('events');
-import SocketExtend from 'common/sockets/socket-extend'
+import SocketExtend from 'common/sockets/protocol/extend-socket/Socket-Extend'
 import NodesList from 'node/lists/nodes-list'
 import NodeSignalingClientProtocol from 'common/sockets/protocol/signaling/client/Node-Signaling-Client-Protocol';
 import CONNECTIONS_TYPE from "node/lists/types/Connections-Type"
@@ -104,7 +104,13 @@ class NodeWebPeerRTC {
 
         console.log('Created webRTC peer', "initiator", initiator, "signalingServerConnectionId", signalingServerConnectionId, "remoteAddress", remoteAddress, "remoteUUID", remoteUUID, "remotePort", remotePort);
 
-        this.peer.disconnect = () => { this.peer.close()  };
+        this.peer.disconnect = () => {
+
+            this.emitter.removeAllListeners();
+            delete this._messages;
+
+            this.peer.close()
+        };
 
         this.socket =  this.peer;
         this.peer.signalData = null;
@@ -123,6 +129,7 @@ class NodeWebPeerRTC {
             this.peer.remoteAddress = remoteAddress||remoteData.address;
             this.peer.remoteUUID = remoteUUID||remoteData.uuid;
             this.peer.remotePort = remotePort||remoteData.port;
+            this.peer.webRTC = true;
 
             SocketExtend.extendSocket(this.peer, this.peer.remoteAddress,  this.peer.remotePort, this.peer.remoteUUID, socketSignaling.node.level + 1 );
 
@@ -465,9 +472,14 @@ class NodeWebPeerRTC {
         this.peer.on("disconnect", ()=>{
 
             console.log("Peer disconnected", this.peer.node.sckAddress.getAddress());
-            NodesList.disconnectSocket( this.peer );
+            try {
+                NodesList.disconnectSocket(this.peer);
 
-            NodeSignalingClientProtocol.webPeerDisconnected(this);
+                NodeSignalingClientProtocol.webPeerDisconnected(this);
+            } catch (exception){
+            }
+
+            delete this.peer;
 
         });
 

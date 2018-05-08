@@ -4,7 +4,7 @@ import global from "consts/global"
 import BlockchainGenesis from 'common/blockchain/global/Blockchain-Genesis'
 import StatusEvents from "common/events/Status-Events";
 import RevertActions from "common/utils/Revert-Actions/Revert-Actions";
-
+import NodeBlockchainPropagation from "common/sockets/protocol/propagation/Node-Blockchain-Propagation";
 /**
  * Blockchain contains a chain of blocks based on Proof of Work
  */
@@ -13,11 +13,26 @@ class InterfaceBlockchainFork {
 
     constructor (){
 
-        // setTimeout(()=>{
-        //
-        //     this
-        //
-        // }, 60*1000)
+        this._blocksCopy = [];
+
+    }
+
+    destroyFork(){
+
+        for (let i=0; i<this.forkBlocks.length; i++)
+            if (this.forkBlocks[i] !== undefined && this.forkBlocks[i] !== null) {
+
+                this.forkBlocks[i].destroyBlock();
+
+                this.forkBlocks[i] = undefined;
+            }
+
+        this.blockchain = undefined;
+        this.headers = [];
+        this.sockets = [];
+        this.forkPromise = [];
+        this._blocksCopy = [];
+
 
     }
 
@@ -247,7 +262,7 @@ class InterfaceBlockchainFork {
                 return false;
             }
 
-            this.blockchain.blocks.spliceBlocks(this.forkStartingHeight);
+            this.blockchain.blocks.spliceBlocks(this.forkStartingHeight, false);
 
             let forkedSuccessfully = true;
 
@@ -275,9 +290,6 @@ class InterfaceBlockchainFork {
 
                 console.log("FORK STATUS SUCCESS5: ", forkedSuccessfully, "position", this.forkStartingHeight);
 
-
-                //successfully, let's delete the backup blocks
-                this._deleteBackupBlocks();
 
             } catch (exception){
 
@@ -315,8 +327,12 @@ class InterfaceBlockchainFork {
         console.log("FORK SOLVER SUCCESS", success);
 
         if (success){
+
+            //successfully, let's delete the backup blocks
+            this._deleteBackupBlocks();
+
             //propagate last block
-            this.blockchain.propagateBlocks( this.blockchain.blocks.length-1, this.sockets );
+            NodeBlockchainPropagation.propagateBlock( this.blockchain.blocks[this.blockchain.blocks.length-1], this.sockets);
 
             this.blockchain.agent.protocol.askBlockchain(this.getSocket());
 
@@ -386,7 +402,7 @@ class InterfaceBlockchainFork {
                         this.blockchain.transactions.pendingQueue.includePendingTransaction(transaction, "all");
                     }
                     catch (exception) {
-                        console.warn("Transaction Was Rejected to be Added to the Pending Queue ", transaction);
+                        console.warn("Transaction Was Rejected to be Added to the Pending Queue ", transaction.toJSON() );
                     }
 
                 });
@@ -420,7 +436,7 @@ class InterfaceBlockchainFork {
                         this.blockchain.transactions.pendingQueue.includePendingTransaction(transaction, "all");
                     }
                     catch (exception) {
-                        console.warn("Transaction Was Rejected to be Added to the Pending Queue ", transaction);
+                        console.warn("Transaction Was Rejected to be Added to the Pending Queue ", transaction.toJSON() );
                     }
 
                 });
@@ -448,8 +464,10 @@ class InterfaceBlockchainFork {
     _deleteBackupBlocks(){
 
 
-        for (let i = this.forkStartingHeight; i < this.blockchain.blocks.length; i++)
-            delete this._blocksCopy[i];
+        for (let i = 0; i < this._blocksCopy.length; i++) {
+            this._blocksCopy[i].destroyBlock();
+            this._blocksCopy[i] = undefined;
+        }
 
         this._blocksCopy = [];
 

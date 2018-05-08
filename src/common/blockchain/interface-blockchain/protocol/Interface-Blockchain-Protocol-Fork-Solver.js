@@ -108,6 +108,7 @@ class InterfaceBlockchainProtocolForkSolver{
                 throw {message: "discoverAndProcessFork - fork is smaller fork than mine"};
 
             let forkFound = this.blockchain.forksAdministrator.findForkBySockets(socket);
+
             if ( forkFound !== null ) {
                 console.error("discoverAndProcessFork - fork already found by socket");
                 return {result: true, fork: forkFound};

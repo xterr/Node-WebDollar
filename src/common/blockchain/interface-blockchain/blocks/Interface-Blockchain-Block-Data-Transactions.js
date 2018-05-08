@@ -3,6 +3,7 @@ import WebDollarCrypto from 'common/crypto/WebDollar-Crypto'
 import consts from 'consts/const_global'
 import Serialization from 'common/utils/Serialization'
 import InterfaceBlockchainTransaction from "../transactions/transaction/Interface-Blockchain-Transaction";
+import Blockchain from "main-blockchain/Blockchain";
 
 class InterfaceBlockchainBlockDataTransactions {
 
@@ -15,6 +16,19 @@ class InterfaceBlockchainBlockDataTransactions {
             hashTransactions = this.calculateHashTransactions();
 
         this.hashTransactions = hashTransactions;
+
+    }
+
+    destroyBlockDataTransactions(){
+
+        for (let i=0; i<this.transactions.length; i++) {
+
+            if ( !Blockchain.blockchain.transactions.pendingQueue.findPendingTransaction(this.transactions[i]) )
+                this.transactions[i].destroyTransaction();
+
+            this.transactions[i] = undefined;
+
+        }
 
     }
 

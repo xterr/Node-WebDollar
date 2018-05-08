@@ -1,3 +1,6 @@
+import BlockchainGenesis from 'common/blockchain/global/Blockchain-Genesis'
+import InterfaceBlockchainAddressHelper from "common/blockchain/interface-blockchain/addresses/Interface-Blockchain-Address-Helper";
+
 const https = require('https');
 const http = require('http');
 const path = require('path')
@@ -16,6 +19,8 @@ class NodeExpress{
         this.loaded = false;
         this.app = undefined;
         this.https = undefined;
+
+        this.SSL = false;
 
     }
 
@@ -49,6 +54,8 @@ class NodeExpress{
 
                 this.server = https.createServer(options, this.app).listen(port, ()=>{
 
+                    this.SSL = true;
+
                     this._initializeRouter();
 
                     console.log("HTTPS Express was opened on port "+port);
@@ -60,7 +67,9 @@ class NodeExpress{
 
                 //cloudflare generates its own SSL certificate
                 this.server = http.createServer(this.app).listen(port, ()=>{
-                    console.log(`server started at localhost:${port}`)
+
+                    console.log(`server started at localhost:${port}`);
+
                     this._initializeRouter();
 
                     resolve(true);
@@ -93,6 +102,56 @@ class NodeExpress{
                 }
 
             });
+
+        });
+
+        // respond with "hello world" when a GET request is made to the homepage
+        this.app.get('/address/:address', (req, res) => {
+
+            let address = req.params.address;
+
+            try {
+                address = InterfaceBlockchainAddressHelper.getUnencodedAddressFromWIF(address);
+            } catch (exception){
+                res.send({result: false, message: "Invalid Address"});
+                return;
+            }
+
+            let answer = [];
+
+            for (let i=0; i<Blockchain.blockchain.blocks.length; i++) {
+
+                for (let j = 0; j < Blockchain.blockchain.blocks[i].data.transactions.transactions.length; j++) {
+
+                    let transaction = Blockchain.blockchain.blocks[i].data.transactions.transactions[j];
+
+                    let found = false;
+                    for (let q = 0; q < transaction.from.addresses.length; q++)
+                        if (transaction.from.addresses[q].unencodedAddress.equals(address)) {
+                            found = true;
+                            break;
+                        }
+
+                    for (let q = 0; q < transaction.to.addresses.length; q++)
+                        if (transaction.to.addresses[q].unencodedAddress.equals(address)) {
+                            found = true;
+                            break;
+                        }
+
+                    if (found) {
+                        answer.push(
+                            {
+                                blockId: Blockchain.blockchain.blocks[i].height,
+                                timestamp: Blockchain.blockchain.blocks[i].timestamp + BlockchainGenesis.timestamp,
+                                transaction: transaction.toJSON()
+                            });
+                    }
+
+                }
+            }
+
+
+            res.send({result: true, transactions: answer});
 
         });
 

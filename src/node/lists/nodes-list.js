@@ -1,5 +1,5 @@
 import GeoLocationLists from 'node/lists/geolocation-lists/geolocation-lists'
-import SocketAddress from 'common/sockets/socket-address'
+import SocketAddress from 'common/sockets/protocol/extend-socket/Socket-Address'
 import NodesListObject from './node-list-object.js';
 import CONNECTION_TYPE from "node/lists/types/Connections-Type";
 
@@ -19,7 +19,7 @@ class NodesList {
         console.log("NodesList constructor");
 
         this.emitter = new EventEmitter();
-        this.emitter.setMaxListeners(100);
+        this.emitter.setMaxListeners(2000);
 
         this.nodes = [];
         this.nodesTotal = 0;
@@ -35,11 +35,31 @@ class NodesList {
         sckAddress = SocketAddress.createSocketAddress(sckAddress);
 
         for (let i=0; i<this.nodes.length; i++)
-            if ( (this.nodes[i].connectionType === connectionType || connectionType === "all") && (this.nodes[i].socket.node.sckAddress.matchAddress(sckAddress, validationDoubleConnectionsTypes))){
+            if ( (this.nodes[i].connectionType === connectionType || connectionType === "all") && (this.nodes[i].socket.node.sckAddress.matchAddress(sckAddress, validationDoubleConnectionsTypes)))
                 return this.nodes[i];
-            }
 
         return null;
+    }
+
+    countNodeSocketByAddress(sckAddress, connectionType){
+
+        if (connectionType === undefined) connectionType = "all";
+
+        sckAddress = SocketAddress.createSocketAddress(sckAddress);
+
+        let countUUIDs = 0, countIPs = 0;
+        for (let i=0; i<this.nodes.length; i++)
+            if (this.nodes[i].connectionType === connectionType || connectionType === "all") {
+
+                if (this.nodes[i].socket.node.sckAddress.uuid === sckAddress.uuid)
+                    countUUIDs++;
+                else
+                if (this.nodes[i].socket.node.sckAddress.address === sckAddress.address)
+                    countIPs++;
+            }
+
+        return {countUUIDs: countUUIDs, countIPs: countIPs};
+
     }
 
     registerUniqueSocket(socket, connectionType, type, validationDoubleConnectionsTypes){
@@ -151,19 +171,19 @@ class NodesList {
         return count;
     }
 
-    countNodesByType(connectionType){
+    countNodesByType(nodeType){
 
-        if ( connectionType === undefined) connectionType = 'all';
+        if ( nodeType === undefined) nodeType = 'all';
 
         let count = 0;
 
         for (let i=0; i<this.nodes.length; i++)
-            if (Array.isArray(connectionType)) { //in case type is an Array
-                if (this.nodes[i].nodeType in connectionType)
+            if (Array.isArray(nodeType)) { //in case type is an Array
+                if (this.nodes[i].nodeType in nodeType)
                     count++;
             }
             else
-            if (connectionType === this.nodes[i].nodeType || connectionType === "all")
+            if (nodeType === this.nodes[i].nodeType || nodeType === "all")
                 count++;
 
         return count;

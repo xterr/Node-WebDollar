@@ -88,16 +88,10 @@ class InterfaceBlockchainProtocolTipsManager {
 
         if (newChainLength < this.blockchain.blocks.length){
 
-            socket.node.sendRequest("head/new-block", {
-                l: this.blockchain.blocks.length,
-                h: this.blockchain.blocks.last.hash,
-                s: this.blockchain.blocks.blocksStartingPoint,
-                p: this.blockchain.agent.light ? ( this.blockchain.proofPi !== null && this.blockchain.proofPi.validatesLastBlock() ? true : false ) : true // i also have the proof
-            });
-
+            socket.node.protocol.sendLastBlock();
 
             if (newChainLength < this.blockchain.blocks.length - 50)
-                BansList.addBan(socket, 5000, "Your blockchain is way smaller than mine");
+                BansList.addBan(socket, 5000, "Your blockchain is way smaller than mine. "+newChainLength+" / "+this.blockchain.blocks.length );
 
             throw "Your blockchain is smaller than mine";
 

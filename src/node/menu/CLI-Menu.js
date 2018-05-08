@@ -4,7 +4,7 @@ const readline = require('readline');
 import InterfaceBlockchainAddressHelper from "common/blockchain/interface-blockchain/addresses/Interface-Blockchain-Address-Helper";
 import WebDollarCoins from "common/utils/coins/WebDollar-Coins";
 
-class CLI{
+class CLI {
 
     constructor(){
 
@@ -27,6 +27,7 @@ class CLI{
 
         if (this._exitMenu === true) {
             this.WEBD_CLI.close();
+            process.exit();
             return;
         }
 
@@ -80,7 +81,7 @@ class CLI{
         this.WEBD_CLI.prompt();
 
         this._exitMenu = false;
-        this._runMenu();
+        await this._runMenu();
     }
 
     async _chooseAddress() {
@@ -90,8 +91,8 @@ class CLI{
         let answer = await this.question('Choose the address number: ');
 
         let addressId = parseInt(answer);
-        if (addressId === NaN || addressId < 0 || Blockchain.Wallet.addresses.length < addressId)
-            addressId = -1;
+        if (isNaN(addressId) || addressId < 0 || Blockchain.Wallet.addresses.length <= addressId)
+            return -1;
 
         return addressId;
     }

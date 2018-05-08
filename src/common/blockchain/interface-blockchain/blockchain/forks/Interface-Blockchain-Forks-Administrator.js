@@ -23,14 +23,18 @@ class InterfaceBlockchainForksAdministrator {
 
             for (let i=0; i<this.forks.length; i++)
                 if (!this.forks[i].forkIsSaving) {
-                    for (let j = 0; j < this.forks[i].sockets.length; j++)
-                        if (this.forks[i].sockets[j].sckAddress === undefined || this.forks[i].sockets[j].sckAddress.matchAddress(nodesListObject.socket.sckAddress)) {
+                    for (let j = this.forks[i].sockets.length-1; j >=0 ; j--)
+                        if (this.forks[i].sockets[j].sckAddress === undefined || this.forks[i].sockets[j].sckAddress.uuid === nodesListObject.socket.sckAddress.uuid ) {
                             this.forks[i].sockets.splice(j, 1);
                             break;
                         }
 
-                    if (this.forks[i].sockets.length === 0)
+                    if (this.forks[i].sockets.length === 0) {
+
+                        this.forks[i].destroyFork();
                         this.forks.splice(i, 1);
+
+                    }
                 }
 
         });
@@ -112,11 +116,12 @@ class InterfaceBlockchainForksAdministrator {
 
         for (let i = 0; i < this.forks.length; i++)
             if (this.forks[i] !== null)
-            for (let j=0; j<this.forks[i].forkHeaders.length; j++) {
+            for (let j=0; j<this.forks[i].forkHeaders.length; j++)
+                if (this.forks[i].forkHeaders[j] !== null) {
 
-                if (this.forks[i].forkHeaders[j].equals(header))
-                    return this.forks[i];
-            }
+                    if (this.forks[i].forkHeaders[j].equals(header))
+                        return this.forks[i];
+                }
 
         return null;
 
@@ -145,8 +150,14 @@ class InterfaceBlockchainForksAdministrator {
             return false;
 
         for (let i=this.forks.length-1; i>=0; i--)
-            if (this.forks[i] === undefined || this.forks[i] === null || this.forks[i] === fork || this.forks[i].forkId === fork)
-                this.forks.splice(i,1);
+            if (this.forks[i] === undefined || this.forks[i] === null || this.forks[i] === fork || this.forks[i].forkId === fork) {
+
+                let fork = this.forks[i];
+                this.forks.splice(i, 1);
+
+                if (this.forks[i] !== undefined && this.forks[i] !== null)
+                    fork.destroyFork();
+            }
 
         return false;
     }

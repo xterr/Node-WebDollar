@@ -2,10 +2,9 @@ import InterfaceBlockchainFork from 'common/blockchain/interface-blockchain/bloc
 import PPoWBlockchainProofPi from './../prover/proofs/PPoW-Blockchain-Proof-Pi'
 import BlockchainGenesis from 'common/blockchain/global/Blockchain-Genesis'
 import consts from 'consts/const_global'
-import BufferExtended from "common/utils/BufferExtended"
 import StatusEvents from "common/events/Status-Events";
 import PPoWHelper from '../helpers/PPoW-Helper'
-import BansList from "../../../../utils/bans/BansList";
+import BansList from "common/utils/bans/BansList";
 
 class PPoWBlockchainFork extends InterfaceBlockchainFork {
 
@@ -15,6 +14,22 @@ class PPoWBlockchainFork extends InterfaceBlockchainFork {
 
         this.forkProofPi = null;
         this._forkProofPiClone = null;
+
+    }
+
+    destroyFork(){
+
+        if (this._forkProofPiClone !== null && (this.blockchain.proofPi === null || this.blockchain.proofPi !== this._forkProofPiClone) )
+            this._forkProofPiClone.destroyProof();
+
+        this._forkProofPiClone = undefined;
+
+        if (this.forkProofPi !== null && (this.blockchain.proofPi === null || this.blockchain.proofPi !== this.forkProofPi) )
+            this.forkProofPi.destroyProof();
+
+        this.forkProofPi = undefined;
+
+        InterfaceBlockchainFork.prototype.destroyFork.call(this);
 
     }
 
@@ -95,9 +110,20 @@ class PPoWBlockchainFork extends InterfaceBlockchainFork {
 
             if (proofsList.length === 0) throw {message: "Proofs was not downloaded successfully"};
 
+            if (proofsList.length < 150){
+
+                console.error("PROOFS LIST length is less than 150", proofsList.length);
+
+            }
+
             StatusEvents.emit( "agent/status", {message: "Proofs - Preparing", blockHeight: this.forkStartingHeight } );
 
-            if (this.blockchain.proofPi !== null) {
+            if (this.blockchain === undefined){
+                console.warn("Strange this.blockchain is empty");
+                return;
+            }
+
+            if ( this.blockchain.proofPi !== null) {
 
                 this.forkProofPi.blocks = proofsList;
 
@@ -105,28 +131,13 @@ class PPoWBlockchainFork extends InterfaceBlockchainFork {
 
                 this._isProofBetter(LCA);
 
-                this.forkProofPi.blocks = [];
-
-                for (let i=0; i<this.blockchain.proofPi.blocks.length; i++)
-                    if (this.blockchain.proofPi.blocks[i].height <= LCA.height ) {
-
-                        let found = false;
-                        for (let j=0; j<proofsList.length; j++)
-                            if (proofsList[j].height === this.blockchain.proofPi.blocks[i].height )
-                                found = true;
-
-                        if (found)
-                            this.forkProofPi.blocks.push(this.blockchain.proofPi.blocks[i]);
-                    }
-
-                if (this.forkProofPi.blocks.length === 0) throw {message: "Proof is invalid LCA nothing"};
-
-                await this.importForkProofPiHeaders( proofsList, LCA.height );
 
             } else {
-                await this.importForkProofPiHeaders( proofsList );
             }
 
+            this.forkProofPi.blocks = [];
+
+            await this.importForkProofPiHeaders( proofsList );
 
             //this.forkProofPi.validateProof();
             if (! this.forkProofPi.validateProofLastElements(consts.POPOW_PARAMS.m))
@@ -160,20 +171,34 @@ class PPoWBlockchainFork extends InterfaceBlockchainFork {
 
     }
 
-    async importForkProofPiHeaders(blocksHeader, LCAHeight = -1 ){
+    async importForkProofPiHeaders( proofsList ){
 
-        for (let i=0; i<blocksHeader.length; i++){
+        for (let i=0; i< proofsList.length; i++){
 
-            if (blocksHeader[i].height <= LCAHeight) continue;
+            //let's verify if I already have this block
+            let found = false, block = undefined;
 
-            let block = this.blockchain.blockCreator.createEmptyBlock( blocksHeader[i].height );
+            if (this.blockchain.proofPi !== undefined && this.blockchain.proofPi !== null) {
+
+                let searchBlock = this.blockchain.proofPi.findBlockByHeight(proofsList[i].height);
+
+                //the block is already included in my original proof
+                if (searchBlock !== null && searchBlock.hash.equals(proofsList[i].hash)) {
+                    block = searchBlock;
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                block = this.blockchain.blockCreator.createEmptyBlock(proofsList[i].height);
+                await block.importBlockFromHeader( proofsList[i] );
+            }
+
             block.blockValidation.getBlockCallBack = this.getForkProofsPiBlock.bind(this);
-
-            await block.importBlockFromHeader( blocksHeader[i] );
-
             this.forkProofPi.blocks.push(block);
 
             StatusEvents.emit( "agent/status", { message: "Validating Proof ", blockHeight: i } );
+
         }
 
         this.forkProofPi.calculateProofHash();

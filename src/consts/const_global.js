@@ -2,9 +2,9 @@ const uuid = require('uuid');
 import FallBackNodesList from 'node/sockets/node-clients/service/discovery/fallbacks/fallback_nodes_list';
 
 let consts = {
-    DEBUG: true,
+    DEBUG: false,
+    OPEN_SERVER: true,
 };
-
 
 
 consts.BLOCKCHAIN = {
@@ -197,8 +197,8 @@ consts.SETTINGS = {
 
     NODE: {
 
-        VERSION: "1.11",
-        VERSION_COMPATIBILITY: "1.11",
+        VERSION: "1.10",
+        VERSION_COMPATIBILITY: "1.10",
         PROTOCOL: "WebDollar",
         SSL: true,
 
@@ -233,14 +233,18 @@ consts.SETTINGS = {
 
         CONNECTIONS:{
 
+            NO_OF_IDENTICAL_IPS: 10,
+
+            PROPAGATE_BLOCKS_TO_SOCKETS: 50,
+
             SOCKETS: {
                 MAXIMUM_CONNECTIONS_IN_BROWSER: 1,
                 MAXIMUM_CONNECTIONS_IN_TERMINAL: 4,
             },
 
             SERVER: {
-                MAXIMUM_CONNECTIONS_FROM_BROWSER: 40,
-                MAXIMUM_CONNECTIONS_FROM_TERMINAL: 10,
+                MAXIMUM_CONNECTIONS_FROM_BROWSER: 150,
+                MAXIMUM_CONNECTIONS_FROM_TERMINAL: 20,
             },
 
             WEBRTC: {
@@ -248,7 +252,7 @@ consts.SETTINGS = {
             },
 
             FORKS:{
-                MAXIMUM_BLOCKS_TO_DOWNLOAD: 20,
+                MAXIMUM_BLOCKS_TO_DOWNLOAD: 50,
             },
 
             TIMEOUT: {
@@ -274,8 +278,8 @@ consts.SETTINGS = {
 
 
 if ( consts.DEBUG === true ){
-    consts.SETTINGS.NODE.VERSION += "1";
-    consts.SETTINGS.NODE.VERSION_COMPATIBILITY += "1";
+    consts.SETTINGS.NODE.VERSION += "3";
+    consts.SETTINGS.NODE.VERSION_COMPATIBILITY += "3";
     consts.SETTINGS.NODE.SSL = false;
     consts.MINING_POOL.MINING.MAXIMUM_BLOCKS_TO_MINE_BEFORE_ERROR = 10000;
 

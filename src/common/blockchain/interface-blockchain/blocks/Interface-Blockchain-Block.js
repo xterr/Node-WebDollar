@@ -16,6 +16,8 @@ class InterfaceBlockchainBlock {
 
     //everything is buffer
 
+
+
     constructor (blockchain, blockValidation, version, hash, hashPrev, timeStamp, nonce, data, height, db){
 
         this.blockchain = blockchain;
@@ -56,6 +58,26 @@ class InterfaceBlockchainBlock {
 
         this.db = db;
 
+    }
+
+    destroyBlock(){
+
+        //it is included in the blockchain
+        if ( this.blockchain.blocks[ this.height ] === this)
+            return;
+
+        this.blockchain = undefined;
+
+        if (this.data !== undefined && this.data !== null)
+            this.data.destroyBlockData();
+
+        this.db = undefined;
+        delete this.data;
+
+        if (this.blockValidation !== undefined && this.blockValidation !== null)
+            this.blockValidation.destroyBlockValidation();
+
+        this.blockValidation = undefined;
     }
 
     async _supplementaryValidation() {
@@ -175,7 +197,7 @@ class InterfaceBlockchainBlock {
         if ( this.blockValidation.blockValidationType['validation-timestamp-adjusted-time'] === true ) {
 
             if (this.timeStamp > this.blockchain.timestamp.networkAdjustedTime - BlockchainGenesis.timeStampOffset + consts.BLOCKCHAIN.TIMESTAMP.NETWORK_ADJUSTED_TIME_MAXIMUM_BLOCK_OFFSET)
-                throw { message: "Timestamp of block is less than the network-adjusted time", timeStamp: this.timeStamp, networkAdjustedTime: this.blockchain.timestamp.networkAdjustedTime, NETWORK_ADJUSTED_TIME_MAXIMUM_BLOCK_OFFSET: consts.BLOCKCHAIN.TIMESTAMP.NETWORK_ADJUSTED_TIME_MAXIMUM_BLOCK_OFFSET }
+                throw { message: "Timestamp of block is less than the network-adjusted time", timeStamp: this.timeStamp, " > ": this.blockchain.timestamp.networkAdjustedTime - BlockchainGenesis.timeStampOffset + consts.BLOCKCHAIN.TIMESTAMP.NETWORK_ADJUSTED_TIME_MAXIMUM_BLOCK_OFFSET, networkAdjustedTime: this.blockchain.timestamp.networkAdjustedTime, NETWORK_ADJUSTED_TIME_MAXIMUM_BLOCK_OFFSET: consts.BLOCKCHAIN.TIMESTAMP.NETWORK_ADJUSTED_TIME_MAXIMUM_BLOCK_OFFSET }
         }
 
     }
@@ -218,19 +240,43 @@ class InterfaceBlockchainBlock {
         return this.computedBlockPrefix;
     }
 
-
+    /**
+     * Computes block's hash
+     * @param newNonce
+     * @returns {Promise<Buffer>}
+     */
     async computeHash(newNonce){
 
         // hash is hashPow ( block header + nonce )
 
         let buffer = Buffer.concat ( [
-                                       Serialization.serializeBufferRemovingLeadingZeros( Serialization.serializeNumber4Bytes(this.height) ),
-                                       Serialization.serializeBufferRemovingLeadingZeros( this.difficultyTargetPrev ),
-                                       this.computedBlockPrefix,
-                                       Serialization.serializeNumber4Bytes(newNonce||this.nonce ),
-                                     ] );
+            Serialization.serializeBufferRemovingLeadingZeros( Serialization.serializeNumber4Bytes(this.height) ),
+            Serialization.serializeBufferRemovingLeadingZeros( this.difficultyTargetPrev ),
+            this.computedBlockPrefix,
+            Serialization.serializeNumber4Bytes(newNonce || this.nonce),
+        ] );
 
         return  await WebDollarCrypto.hashPOW(buffer);
+    }
+
+    /**
+     * Computes a hash based on static block data
+     * @param newNonce
+     * @param height
+     * @param difficultyTargetPrev
+     * @param computedBlockPrefix
+     * @param blockNonce
+     * @returns {Promise<Buffer>}
+     */
+    static async computeHashStatic(newNonce, height, difficultyTargetPrev, computedBlockPrefix, blockNonce) {
+        let buffer = Buffer.concat ( [
+            Serialization.serializeBufferRemovingLeadingZeros( Serialization.serializeNumber4Bytes(height) ),
+            Serialization.serializeBufferRemovingLeadingZeros( difficultyTargetPrev ),
+            computedBlockPrefix,
+            Serialization.serializeNumber4Bytes(newNonce || blockNonce ),
+        ] );
+
+        return await WebDollarCrypto.hashPOW(buffer)
     }
 
     serializeBlock(requestHeader){
@@ -394,12 +440,13 @@ class InterfaceBlockchainBlock {
 
     async importBlockFromHeader(json) {
 
-        this.version = json.version;
         this.height = json.height;
         this.hash = json.hash;
         this.hashPrev = json.hashPrev;
         this.data.hashData = json.data.hashData;
         this.nonce = json.nonce;
+
+        this.version = json.version;
         this.timeStamp = json.timeStamp;
         this.difficultyTargetPrev = json.difficultyTargetPrev;
 
