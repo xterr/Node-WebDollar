@@ -24,7 +24,8 @@ class MiniBlockchainAgentLightNode extends inheritAgentClass{
         super(blockchain);
 
         this.light = true;
-        this.prevAddress =  this.status;
+
+
 
         setInterval( () => {
 
@@ -41,6 +42,28 @@ class MiniBlockchainAgentLightNode extends inheritAgentClass{
                 }
 
         }, (consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK - 10) * 1000);
+
+        NodesList.emitter.on("nodes-list/disconnected", (nodesListObject) => {
+
+            let socket = nodesListObject.socket;
+
+            if ( socket.node.connectionType === CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET && NodesList.countNodesByConnectionType(CONNECTION_TYPE.CONNECTION_WEBRTC) >= 2 ){
+
+                this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_WEBRTC;
+
+                let index = NodesWaitlist._findNodesWaitlist(socket.node.sckAddress, undefined, socket.node.connectionType );
+                if (index === 0) return; //already priority
+
+                if (index === -1) console.error("sync was not able to find full node");
+
+                let waitlist = NodesWaitlist.waitListFullNodes[index];
+                NodesWaitlist.waitListFullNodes.splice(index, 1);
+
+                NodesWaitlist.waitListFullNodes.unshift(waitlist);
+
+            }
+
+        })
 
     }
 
