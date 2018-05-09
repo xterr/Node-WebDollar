@@ -291,13 +291,33 @@ class InterfaceBlockchain {
         return result;
     }
 
-    _getLoadBlockchainValidationType(indexStart, i, numBlocks, onlyLastBlocks){
+    _getLoadBlockchainValidationType(indexStart, i, numBlocks, indexStartProcessingOffset){
 
-        return {};
+        let validationType = {};
+
+        if (indexStartProcessingOffset !== undefined ){
+
+            if ( i <= indexStartProcessingOffset ){
+
+                validationType["skip-prev-hash-validation"] = true;
+                validationType["skip-accountant-tree-validation"] = true;
+                validationType["skip-mini-blockchain-simulation"] = true;
+                validationType["skip-validation-transactions-from-values"] = true;
+
+
+                if (Math.random() < 0.001)
+                    validationType["skip-validation-PoW-hash"] = true;
+
+            }
+
+        }
+
+
+        return validationType;
 
     }
 
-    async loadBlockchain(onlyLastBlocks = undefined){
+    async loadBlockchain( indexStartLoadingOffset = undefined, indexStartProcessingOffset = undefined ){
 
         if (process.env.BROWSER)
             return true;
@@ -309,30 +329,38 @@ class InterfaceBlockchain {
             return false;
         }
 
-        console.warn("validateLastBlocks", numBlocks);
-        console.warn("validateLastBlocks", numBlocks);
-        console.warn("validateLastBlocks", numBlocks);
-
         this.blocks.clear();
 
         try {
 
             let indexStart = 0;
 
-            if (this.agent !== undefined && this.agent.light === true) {
+            if (indexStartLoadingOffset )
+                indexStart = numBlocks - indexStartLoadingOffset;
 
-                indexStart = Math.max(0, numBlocks - onlyLastBlocks-1);
+            if (indexStartProcessingOffset !== undefined)
+                indexStartProcessingOffset = numBlocks - indexStartProcessingOffset;
 
-                this.blocks.length = indexStart||0; // marking the first blocks as undefined
-            }
+            this.blocks.length = indexStart || 0; // marking the first blocks as undefined
 
-            for (let i = indexStart; i < numBlocks; ++i) {
+            let index;
+            try {
 
-                let validationType = this._getLoadBlockchainValidationType(indexStart, i, numBlocks, onlyLastBlocks);
+                for (index = indexStart; index < numBlocks; ++index ) {
 
-                let blockValidation = new InterfaceBlockchainBlockValidation(  this.getBlock.bind(this), this.getDifficultyTarget.bind(this), this.getTimeStamp.bind(this), this.getHashPrev.bind(this), validationType );
+                    let validationType = this._getLoadBlockchainValidationType(indexStart, index, numBlocks, indexStartProcessingOffset );
 
-                await this._loadBlock(indexStart, i, blockValidation);
+                    let blockValidation = new InterfaceBlockchainBlockValidation(  this.getBlock.bind(this), this.getDifficultyTarget.bind(this), this.getTimeStamp.bind(this), this.getHashPrev.bind(this), validationType );
+
+                    await this._loadBlock(indexStart, index, blockValidation);
+
+                }
+
+            } catch (exception){
+                console.error("Error loading block", index);
+
+                if ( this.blocks.length < 10)
+                    return false;
 
             }
 
