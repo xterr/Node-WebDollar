@@ -132,7 +132,8 @@ class InterfaceBlockchain {
 
     _onBlockCreated(block, saveBlock){
 
-        this.blocks.recalculateNetworkHashRate();
+        if (saveBlock)
+            this.blocks.recalculateNetworkHashRate();
 
     }
 
@@ -303,7 +304,12 @@ class InterfaceBlockchain {
                 validationType["skip-accountant-tree-validation"] = true;
                 validationType["skip-mini-blockchain-simulation"] = true;
                 validationType["skip-validation-transactions-from-values"] = true;
-
+                validationType["skip-validation-timestamp"] = true;
+                validationType["validation-timestamp-adjusted-time"] = true;
+                validationType["skip-block-data-validation"] = true;
+                validationType["skip-block-data-transactions-validation"] = true;
+                validationType["skip-validation-interlinks"] = true;
+                validationType["skip-validation"] = true;
 
                 if (Math.random() < 0.001)
                     validationType["skip-validation-PoW-hash"] = true;
@@ -338,12 +344,19 @@ class InterfaceBlockchain {
             if (indexStartLoadingOffset )
                 indexStart = numBlocks - indexStartLoadingOffset;
 
-            if (indexStartProcessingOffset !== undefined)
+            if (indexStartProcessingOffset !== undefined) {
                 indexStartProcessingOffset = numBlocks - indexStartProcessingOffset;
+
+                console.warn("===========================================================");
+                console.warn("BLocks Processing starts at: ", indexStartProcessingOffset);
+                console.warn("===========================================================");
+
+            }
 
             this.blocks.length = indexStart || 0; // marking the first blocks as undefined
 
             let index;
+
             try {
 
                 for (index = indexStart; index < numBlocks; ++index ) {
@@ -379,10 +392,9 @@ class InterfaceBlockchain {
     }
 
 
-    async _loadBlock(indexStart, i, blockValidation, revertActions){
+    async _loadBlock(indexStart, i, blockValidation){
 
-        if (revertActions === undefined)
-            revertActions = new RevertActions(this);
+        let revertActions = new RevertActions(this);
 
         revertActions.push( { name: "breakpoint" } );
 
@@ -411,9 +423,12 @@ class InterfaceBlockchain {
         } catch (exception){
             console.error("blockchain LOADING stopped at " + i, exception);
             revertActions.revertOperations();
+            revertActions.destroyRevertActions();
+
             throw exception;
         }
 
+        revertActions.destroyRevertActions();
         return block;
     }
 

@@ -34,9 +34,6 @@ class MiniBlockchain extends  inheritBlockchain{
 
     async simulateNewBlock(block, revertAutomatically, revertActions, callback){
 
-        if (revertActions === undefined)
-            revertActions = new RevertActions(this);
-
         revertActions.push( { name: "breakpoint" } );
 
         let revertException = false;
@@ -86,15 +83,19 @@ class MiniBlockchain extends  inheritBlockchain{
 
                 if (revertException)
                     return false;
+
             }
 
 
         } catch (exception){
 
             console.log("MiniBlockchain Reverting Error raised an exception", exception);
-            return false;
+            revertActions.clearUntilBreakpoint();
 
+            return false;
         }
+
+        revertActions.clearUntilBreakpoint();
 
         return true;
 
