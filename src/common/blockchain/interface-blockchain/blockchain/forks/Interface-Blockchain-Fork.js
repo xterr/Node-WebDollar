@@ -34,7 +34,8 @@ class InterfaceBlockchainFork {
         this.sockets = [];
         this.forkPromise = [];
         this._blocksCopy = [];
-
+        this._forkPromiseResolver = undefined;
+        this.forkPromise = undefined;
 
     }
 
@@ -201,7 +202,7 @@ class InterfaceBlockchainFork {
             validationType["validation-timestamp-adjusted-time"] = true;
 
         if (height !== this.forkChainLength-1)
-            validationType["avoid-calculating-proofs"] = true;
+            validationType["skip-calculating-proofs"] = true;
 
         return new InterfaceBlockchainBlockValidation(this.getForkBlock.bind(this), this.getForkDifficultyTarget.bind(this), this.getForkTimeStamp.bind(this), this.getForkPrevHash.bind(this), validationType );
     }
@@ -319,7 +320,7 @@ class InterfaceBlockchainFork {
 
             if (forkedSuccessfully) {
                 this.blockchain.mining.resetMining();
-                setTimeout( ()=>{ this._forkPromiseResolver(true) } , 10 ); //making it async
+                this._forkPromiseResolver(true) //making it async
             }
 
             this.forkIsSaving = false;

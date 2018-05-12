@@ -23,6 +23,7 @@ class InterfaceBlockchainForksAdministrator {
 
             for (let i=0; i<this.forks.length; i++)
                 if (!this.forks[i].forkIsSaving) {
+
                     for (let j = this.forks[i].sockets.length-1; j >=0 ; j--)
                         if (this.forks[i].sockets[j].sckAddress === undefined || this.forks[i].sockets[j].sckAddress.uuid === nodesListObject.socket.sckAddress.uuid ) {
                             this.forks[i].sockets.splice(j, 1);
@@ -155,7 +156,7 @@ class InterfaceBlockchainForksAdministrator {
                 let fork = this.forks[i];
                 this.forks.splice(i, 1);
 
-                if (this.forks[i] !== undefined && this.forks[i] !== null)
+                if (fork !== undefined && fork !== null)
                     fork.destroyFork();
             }
 

@@ -39,6 +39,7 @@ class SignalingServerRoomListConnections {
             let roomConnectionObject = new SignalingServerRoomConnectionObject(client1, client2, status, uuid.v4());
 
             this.list.push(roomConnectionObject);
+            this.list.push(roomConnectionObject);
 
             return roomConnectionObject;
 

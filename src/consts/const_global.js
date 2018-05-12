@@ -239,9 +239,9 @@ consts.SETTINGS = {
 
         CONNECTIONS:{
 
-            NO_OF_IDENTICAL_IPS: 10,
+            NO_OF_IDENTICAL_IPS: 3,
 
-            PROPAGATE_BLOCKS_TO_SOCKETS: 50,
+            SOCKETS_TO_PROPAGATE_NEW_BLOCK_TIP: 50,
 
             TERMINAL:{
 
@@ -251,8 +251,8 @@ consts.SETTINGS = {
                 },
 
                 SERVER: {
-                    MAXIMUM_CONNECTIONS_FROM_BROWSER: 650,
-                    MAXIMUM_CONNECTIONS_FROM_TERMINAL: 30,
+                    MAXIMUM_CONNECTIONS_FROM_BROWSER: 850,
+                    MAXIMUM_CONNECTIONS_FROM_TERMINAL: 150,
                 },
 
             },
@@ -272,7 +272,7 @@ consts.SETTINGS = {
             },
 
             FORKS:{
-                MAXIMUM_BLOCKS_TO_DOWNLOAD: 50,
+                MAXIMUM_BLOCKS_TO_DOWNLOAD: 100,
             },
 
             TIMEOUT: {
@@ -298,6 +298,9 @@ consts.SETTINGS = {
 
 if (process.env.MAXIMUM_CONNECTIONS_FROM_BROWSER !== undefined)
     consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.MAXIMUM_CONNECTIONS_FROM_BROWSER = process.env.MAXIMUM_CONNECTIONS_FROM_BROWSER;
+
+if (process.env.MAXIMUM_CONNECTIONS_FROM_TERMINAL !== undefined)
+    consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.MAXIMUM_CONNECTIONS_FROM_TERMINAL = process.env.MAXIMUM_CONNECTIONS_FROM_TERMINAL;
 
 if (process.env.MAXIMUM_CONNECTIONS_IN_TERMINAL !== undefined)
     consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.CLIENT.MAXIMUM_CONNECTIONS_IN_TERMINAL = process.env.MAXIMUM_CONNECTIONS_IN_TERMINAL;

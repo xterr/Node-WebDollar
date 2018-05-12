@@ -27,13 +27,15 @@ class NodeServer {
 
         this.nodeServer = null;
 
-        if (!NodeExpress.loaded)
-            await NodeExpress.startExpress();
+        await NodeExpress.startExpress();
 
         if (!consts.OPEN_SERVER) return false;
 
         try
         {
+
+            console.warn("Starting Socket.io Server");
+
             let server = null;
             try {
 
@@ -45,6 +47,8 @@ class NodeServer {
                 console.log("Error Importing io() library", Exception);
             }
             this.nodeServer = server;
+
+            console.warn("Starting Socket.io was started successfully");
 
             server.on("connection", socket => {
 
@@ -75,14 +79,21 @@ class NodeServer {
                     return;
                 }
 
-                if (NODES_TYPE.NODE_TERMINAL === nodeType && NodesList.countNodesByType(NODES_TYPE.NODE_TERMINAL) > consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.MAXIMUM_CONNECTIONS_FROM_TERMINAL){
-                    console.warn("too many terminal connections");
+
+                if (NODES_TYPE.NODE_TERMINAL === nodeType && NodesList.countNodesByType(NODES_TYPE.NODE_TERMINAL) > consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.MAXIMUM_CONNECTIONS_FROM_TERMINAL){
+
+                    if (Math.random() < 0.05)
+                        console.warn("too many terminal connections");
+
                     socket.disconnect();
                     return;
                 }
 
-                if (NODES_TYPE.NODE_WEB_PEER === nodeType && NodesList.countNodesByType(NODES_TYPE.NODE_WEB_PEER) > consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.MAXIMUM_CONNECTIONS_FROM_BROWSER){
-                    console.warn("too many browser connections");
+                if (NODES_TYPE.NODE_WEB_PEER === nodeType && NodesList.countNodesByType(NODES_TYPE.NODE_WEB_PEER) > consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.MAXIMUM_CONNECTIONS_FROM_BROWSER){
+
+                    if (Math.random() < 0.05)
+                        console.warn("too many browser connections");
+
                     socket.disconnect();
                     return;
                 }

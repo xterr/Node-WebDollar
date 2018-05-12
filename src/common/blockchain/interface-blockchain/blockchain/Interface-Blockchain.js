@@ -98,6 +98,14 @@ class InterfaceBlockchain {
 
         if (block.blockValidation === undefined)
             block.blockValidation = this.createBlockValidation();
+        else {
+
+            block.blockValidation.getBlockCallBack = this.getBlock.bind(this);
+            block.blockValidation.getDifficultyCallback = this.getDifficultyTarget.bind(this);
+            block.blockValidation.getTimeStampCallback = this.getTimeStamp.bind(this);
+            block.blockValidation.getHashPrevCallback = this.getHashPrev.bind(this);
+
+        }
 
 
         if (! (await this.validateBlockchainBlock(block)) ) // the block has height === this.blocks.length
@@ -175,7 +183,7 @@ class InterfaceBlockchain {
 
             block.difficultyTarget = block.blockValidation.getDifficulty( block.timeStamp, block.height );
 
-            block.difficultyTarget = Serialization.serializeToFixedBuffer( consts.BLOCKCHAIN.BLOCKS_POW_LENGTH, Serialization.serializeBigInteger(block.difficultyTarget) );
+            block.difficultyTarget = Serialization.serializeBigNumber(block.difficultyTarget, consts.BLOCKCHAIN.BLOCKS_POW_LENGTH);
 
         }
 
@@ -298,6 +306,7 @@ class InterfaceBlockchain {
 
         if (indexStartProcessingOffset !== undefined ){
 
+            //fast loading Blockchain
             if ( i <= indexStartProcessingOffset ){
 
                 validationType["skip-prev-hash-validation"] = true;
@@ -305,13 +314,18 @@ class InterfaceBlockchain {
                 validationType["skip-mini-blockchain-simulation"] = true;
                 validationType["skip-validation-transactions-from-values"] = true;
                 validationType["skip-validation-timestamp"] = true;
-                validationType["validation-timestamp-adjusted-time"] = true;
+                validationType["validation-timestamp-adjusted-time"] = false;
                 validationType["skip-block-data-validation"] = true;
                 validationType["skip-block-data-transactions-validation"] = true;
                 validationType["skip-validation-interlinks"] = true;
                 validationType["skip-validation"] = true;
+                validationType["skip-interlinks-update"] = true;
+                validationType["skip-target-difficulty-validation"] = true;
+                validationType["skip-calculating-proofs"] = true;
+                validationType["skip-calculating-block-nipopow-level"] = true;
+                validationType["skip-saving-light-accountant-tree-serializations"] = true;
 
-                if (Math.random() < 0.001)
+                if (Math.random() > 0.0001)
                     validationType["skip-validation-PoW-hash"] = true;
 
             }
@@ -328,11 +342,20 @@ class InterfaceBlockchain {
         if (process.env.BROWSER)
             return true;
 
-        //load the number of blocks
-        let numBlocks = await this.db.get(this._blockchainFileName);
-        if (numBlocks === null ) {
-            console.error("numBlocks was not found");
-            return false;
+        let numBlocks = 0;
+
+        try {
+            //load the number of blocks
+            numBlocks = await this.db.get(this._blockchainFileName);
+            if (numBlocks === null) {
+                console.error("numBlocks was not found");
+                return false;
+            }
+
+        } catch (exception){
+
+            numBlocks = 0;
+
         }
 
         this.blocks.clear();
@@ -355,7 +378,7 @@ class InterfaceBlockchain {
 
             this.blocks.length = indexStart || 0; // marking the first blocks as undefined
 
-            let index;
+            let index = 0;
 
             try {
 
@@ -365,7 +388,9 @@ class InterfaceBlockchain {
 
                     let blockValidation = new InterfaceBlockchainBlockValidation(  this.getBlock.bind(this), this.getDifficultyTarget.bind(this), this.getTimeStamp.bind(this), this.getHashPrev.bind(this), validationType );
 
-                    await this._loadBlock(indexStart, index, blockValidation);
+                    let block = await this._loadBlock(indexStart, index, blockValidation);
+
+                    block.blockValidation.blockValidationType = {};
 
                 }
 
@@ -374,6 +399,10 @@ class InterfaceBlockchain {
 
                 if ( this.blocks.length < 10)
                     return false;
+
+                if (indexStartProcessingOffset !== undefined){
+                    return false;
+                }
 
             }
 
