@@ -59,7 +59,6 @@ class InterfaceBlockchainTransactionsProtocol{
                 if (response.format === 'buffer')
                     transaction = Blockchain.blockchain.transactions._createTransactionFromBuffer(response.buffer).transaction;
 
-
                 if (transaction === undefined) throw {message: "Transaction was not specified"};
 
                 if (!transaction.isTransactionOK())
@@ -185,7 +184,6 @@ class InterfaceBlockchainTransactionsProtocol{
 
     }
 
-
     async downloadTransactions(socket,  start = 0, count = 40){
 
         try {
@@ -246,7 +244,6 @@ class InterfaceBlockchainTransactionsProtocol{
         }
 
     }
-
 
     propagateNewPendingTransaction(transaction, exceptSockets){
 
