@@ -40,6 +40,8 @@ class MiniBlockchain extends  inheritBlockchain{
 
         try{
 
+            console.error("1111 block.blockchain === undefined", block.blockchain === undefined, "block.blockValidation", block.blockValidation === undefined);
+
             if (block.blockValidation.blockValidationType['skip-mini-blockchain-simulation'] !== true) {
 
                 //updating reward
@@ -68,7 +70,11 @@ class MiniBlockchain extends  inheritBlockchain{
 
             }
 
+            console.error("2222 block.blockchain === undefined", block.blockchain === undefined, "block.blockValidation", block.blockValidation === undefined);
+
             let callbackDone = await callback();
+
+            console.error("333 block.blockchain === undefined", block.blockchain === undefined, "block.blockValidation", block.blockValidation === undefined);
 
             if (!block.blockValidation.blockValidationType['skip-sleep']) await this.sleep(50);
 
