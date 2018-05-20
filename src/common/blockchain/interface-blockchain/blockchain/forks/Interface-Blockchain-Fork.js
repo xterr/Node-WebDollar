@@ -18,13 +18,14 @@ class InterfaceBlockchainFork {
     constructor (){
 
         this._blocksCopy = [];
+        this.forkIsSaving = false;
 
     }
 
     destroyFork(){
 
         for (let i=0; i<this.forkBlocks.length; i++)
-            if (this.forkBlocks[i] !== undefined && this.forkBlocks[i] !== null) {
+            if (this.forkBlocks[i] !== undefined && this.forkBlocks[i] !== null && this.blockchain.blocks[this.forkBlocks[i].height] !== this.forkBlocks[i] ) {
 
                 this.forkBlocks[i].destroyBlock();
 
@@ -32,6 +33,8 @@ class InterfaceBlockchainFork {
             }
 
         this.blockchain = undefined;
+
+        this.forkBlocks = [];
         this.headers = [];
         this.sockets = [];
         this.forkPromise = [];
@@ -59,7 +62,6 @@ class InterfaceBlockchainFork {
 
         this.forkReady = false;
 
-        this.forkIsSaving = false;
         this.forkStartingHeight = forkStartingHeight||0;
         this.forkStartingHeightDownloading = forkStartingHeight||0;
 
@@ -230,6 +232,9 @@ class InterfaceBlockchainFork {
         if (global.TERMINATED)
             return false;
 
+        this.forkIsSaving = true; //marking it saved because we want to avoid the forksAdministrator to delete it
+        if (this.blockchain === undefined) return false; //fork was already destroyed
+
         if (! (await this._validateFork(false, true))) {
             console.error("validateFork was not passed");
             return false
@@ -241,9 +246,11 @@ class InterfaceBlockchainFork {
         let revertActions = new RevertActions(this.blockchain);
         revertActions.push({action: "breakpoint"});
 
-        let success = await this.blockchain.semaphoreProcessing.processSempahoreCallback( async () => {
+        let success;
 
-            let accountantTreeClone = this.blockchain.accountantTree.serializeMiniAccountant(true);
+        if (this.blockchain === undefined) success = false ; //fork was already destroyed
+        else
+        success = await this.blockchain.semaphoreProcessing.processSempahoreCallback( async () => {
 
             if (! (await this._validateFork(false, false))) {
                 console.error("validateFork was not passed");
@@ -251,8 +258,6 @@ class InterfaceBlockchainFork {
             }
 
             if (!this.downloadAllBlocks) await this.sleep(50);
-
-            this.forkIsSaving = true;
 
             try {
 
@@ -284,8 +289,6 @@ class InterfaceBlockchainFork {
                     console.log("revertFork rasied an error", exception );
                 }
 
-                this.blockchain.accountantTree.deserializeMiniAccountant(accountantTreeClone, undefined, true);
-
                 this.forkIsSaving = false;
                 return false;
             }
@@ -309,7 +312,6 @@ class InterfaceBlockchainFork {
 
                 for (let i = 0; i < this.forkBlocks.length; i++) {
 
-                    console.log("transactions");
                     for (let j = 0; j < this.forkBlocks[i].data.transactions.transactions.length; j++)
                         console.log("transaction", this.forkBlocks[i].data.transactions.transactions[j].toJSON());
 
@@ -344,7 +346,6 @@ class InterfaceBlockchainFork {
 
                 console.log("FORK STATUS SUCCESS5: ", forkedSuccessfully, "position", this.forkStartingHeight);
 
-
             } catch (exception){
 
                 console.error('-----------------------------------------');
@@ -354,22 +355,25 @@ class InterfaceBlockchainFork {
                 console.error('-----------------------------------------');
                 forkedSuccessfully = false;
 
-
                 //revert the accountant tree
                 //revert the last K block
-                revertActions.revertOperations('', "all");
-                await this.sleep(30);
-
-                //reverting back to the clones, especially light settings
 
                 try {
-                    await this.revertFork();
+                    revertActions.revertOperations('', "all");
                 } catch (exception){
-                    console.log("revertFork rasied an error", exception );
+                    console.error("revertOptions rasied an error", exception );
                 }
                 await this.sleep(30);
 
-                this.blockchain.accountantTree.deserializeMiniAccountant(accountantTreeClone,undefined, true);
+                try {
+                    //reverting back to the clones, especially light settings
+                    await this.revertFork();
+                } catch (exception){
+                    console.error("revertFork rasied an error", exception );
+                }
+
+                await this.sleep(30);
+
             }
 
             if (!this.downloadAllBlocks) await this.sleep(30);
@@ -385,8 +389,6 @@ class InterfaceBlockchainFork {
             if (forkedSuccessfully) {
                 this.blockchain.mining.resetMining();
                 this._forkPromiseResolver(true) //making it async
-            } else {
-                this.blockchain.accountantTree.deserializeMiniAccountant(accountantTreeClone,undefined, true);
             }
 
             this.forkIsSaving = false;
@@ -447,12 +449,15 @@ class InterfaceBlockchainFork {
 
 
     async revertFork(){
+
+        let index = 0;
+
         try {
 
             let revertActions = new RevertActions(this.blockchain);
 
             for (let i=0; i<this._blocksCopy.length; i++)
-                if (! (await this.blockchain.includeBlockchainBlock( this._blocksCopy[i], false, "all", false,revertActions ))) {
+                if (! (await this.blockchain.includeBlockchainBlock( this._blocksCopy[i], false, "all", false, revertActions ))) {
 
                     console.error("----------------------------------------------------------");
                     console.error("----------------------------------------------------------");
@@ -465,7 +470,7 @@ class InterfaceBlockchainFork {
                 }
 
         } catch (exception){
-            console.error("saveFork includeBlockchainBlock2 raised exception", exception);
+            console.error("saveFork includeBlockchainBlock2 raised exception", index, exception);
         }
     }
 
@@ -546,10 +551,11 @@ class InterfaceBlockchainFork {
     _deleteBackupBlocks(){
 
 
-        for (let i = 0; i < this._blocksCopy.length; i++) {
-            this._blocksCopy[i].destroyBlock();
-            this._blocksCopy[i] = undefined;
-        }
+        for (let i = 0; i < this._blocksCopy.length; i++)
+            if ( this._blocksCopy[i] !== undefined && this._blocksCopy[i] !== null && this.blockchain.blocks[ this._blocksCopy[i].height ] !== this._blocksCopy[i] ) {
+                this._blocksCopy[i].destroyBlock();
+                this._blocksCopy[i] = undefined;
+            }
 
         this._blocksCopy = [];
 

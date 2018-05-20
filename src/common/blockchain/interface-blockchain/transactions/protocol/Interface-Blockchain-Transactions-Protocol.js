@@ -188,6 +188,7 @@ class InterfaceBlockchainTransactionsProtocol{
 
         try {
 
+            if (socket === undefined) return;
             let answer = await socket.node.sendRequestWaitOnce("transactions/get-pending-transactions-ids", {format: "buffer", start: start, count: count}, 'answer', 5000);
 
             if (answer === null || answer === undefined || answer.result !== true || answer.transactions === null && !Array.isArray(answer.transactions)) return false;
@@ -210,25 +211,34 @@ class InterfaceBlockchainTransactionsProtocol{
             if ( downloadingTransactions.length === 0) //nothing to download
                 return;
 
+            if (socket === undefined) return;
+
             let answerTransactions = await socket.node.sendRequestWaitOnce("transactions/get-pending-transactions-by-ids", {format: "buffer", ids: downloadingTransactions }, "answer" , 5000);
 
             if (answerTransactions === null || answerTransactions === undefined || answerTransactions.result !== true || answerTransactions.transactions === null && !Array.isArray(answerTransactions.transactions)) return false;
 
+            let errors = 0;
             for (let i=0; i<answerTransactions.transactions.length; i++){
 
                 let transaction = Blockchain.blockchain.transactions._createTransactionFromBuffer(answerTransactions.transactions[i]).transaction;
 
                 try {
 
-                    if ( !transaction.isTransactionOK() )
+                    if ( !transaction.isTransactionOK(true) ) {
+                        errors++;
                         continue;
+                    }
 
                     if (!Blockchain.blockchain.transactions.pendingQueue.includePendingTransaction(transaction, socket))
                         ; //console.warn("I already have this transaction", transaction.txId.toString("hex"))
 
                 } catch (exception){
-
+                    errors++;
                 }
+
+                if (errors > 6)
+                    return;
+
 
             }
 
@@ -236,7 +246,7 @@ class InterfaceBlockchainTransactionsProtocol{
 
 
             if (start + count < answer.length)
-                setTimeout( async ()=>{ await this.downloadTransactions(this, start+count, count)}, 1500 + (Math.random()*1000) );
+                setTimeout( async ()=>{ await this.downloadTransactions(socket, start+count, count)}, 1500 + (Math.random()*1000) );
 
 
         } catch (exception){
