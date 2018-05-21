@@ -148,7 +148,9 @@ class Blockchain{
         if (this.synchronized === false) return;
 
         this.synchronized = false;
-        console.warn("################### RESYNCHRONIZATION STARTED ##########");
+        console.warn("###############################################");
+        console.warn("########## RESYNCHRONIZATION STARTED ##########");
+        console.warn("###############################################");
 
         let suspendMining = false;
         if (this.blockchain.agent.light && NodesList.nodes.length <= 0)

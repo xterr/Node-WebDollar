@@ -39,7 +39,7 @@ class NodeServer {
 
     constructor() {
 
-        console.log("NodeServer constructor");
+        console.log("~~~ Initializing NodeServer ~~~");
         this.nodeServer = null;
 
         this.loaded = false;

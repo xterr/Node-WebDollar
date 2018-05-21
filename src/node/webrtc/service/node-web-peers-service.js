@@ -5,7 +5,7 @@ import Blockchain from "main-blockchain/Blockchain"
 class NodeWebPeersService {
 
     constructor(){
-        console.log("NodeWebPeersService constructor");
+        console.log("~~~ Initializing NodeWebPeersService ~~~");
     }
 
 

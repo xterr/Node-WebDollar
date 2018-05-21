@@ -6,7 +6,7 @@ class NodeWebPeersDiscoveryService {
 
     constructor() {
 
-        console.log("NodeWebPeersDiscoveryService constructor");
+        console.log("~~~ Initializing NodeWebPeersDiscoveryService ~~~");
 
     }
 

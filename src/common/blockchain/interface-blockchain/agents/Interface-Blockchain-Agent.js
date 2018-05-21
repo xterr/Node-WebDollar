@@ -79,7 +79,10 @@ class InterfaceBlockchainAgent extends InterfaceBlockchainAgentBasic{
 
             if (NodesList.nodes.length === 0) { //no more sockets, maybe I no longer have internet
 
-                console.warn("################### RESYNCHRONIZATION STARTED ##########");
+                console.warn("###############################################");
+                console.warn("########## RESYNCHRONIZATION STARTED ##########");
+                console.warn("###############################################");
+
                 Blockchain.synchronizeBlockchain();
 
             }

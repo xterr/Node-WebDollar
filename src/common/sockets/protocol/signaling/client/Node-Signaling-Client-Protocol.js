@@ -8,7 +8,7 @@ class NodeSignalingClientProtocol {
 
     constructor(){
 
-        console.log("NodeSignalingClientProtocol constructor");
+        console.log("~~~ Initializing NodeSignalingClientProtocol ~~~");
     }
 
     _initializeSimpleProtocol(socket){

@@ -13,7 +13,7 @@ class GeoLocationLists {
 
     constructor(){
 
-        console.log("GeoLocations constructor");
+        console.log("~~~ Initializing GeoLocations ~~~");
 
         this.geoLocationContinentsLists = {};
         this.geoLocationLists = [];

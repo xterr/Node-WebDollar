@@ -58,7 +58,7 @@ class NodeWebPeerRTC {
     constructor(){
 
         if (consts.DEBUG)
-            console.log("Peer WebRTC Client constructor");
+            console.log("~~~ Initializing NodeWebPeerRTC ~~~");
 
         this.peer = null;
 

@@ -1,8 +1,6 @@
 import {Node, Blockchain} from './index.js';
 import global from "consts/global.js";
 
-console.log("BROWSER MODE");
-
 //Blockchain.createBlockchain("headers-node");
 Blockchain.createBlockchain("light-node", ()=>{
     Node.NodeClientsService.startService();

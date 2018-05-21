@@ -299,8 +299,9 @@ class InterfaceBlockchainFork {
 
             let forkedSuccessfully = true;
 
-            console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
-            console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+            console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+            console.log('@@@@@@@@@@@@@@ BLOCK '+ this.blockchain.blocks.length +' WAS MINED @@@@@@@@@@@@@@');
+            console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
 
             //TODO use the revertActions to revert the process
 

@@ -67,7 +67,7 @@ class NodeClient {
                 if (process.env.BROWSER && consts.SETTINGS.NODE.SSL )
                     SSL = true;
 
-                console.log("connecting... to:                ", address);
+                console.log("Connecting to: ", address);
 
                 let socket = null;
                 try {

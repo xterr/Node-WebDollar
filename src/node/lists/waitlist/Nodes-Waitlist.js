@@ -14,7 +14,7 @@ class NodesWaitlist {
 
     constructor(){
 
-        console.log("NodesWaitlist constructor");
+        console.log("~~~ Initializing NodesWaitlist ~~~");
 
         this.NodesWaitlistObject = NodesWaitlistObject;
 

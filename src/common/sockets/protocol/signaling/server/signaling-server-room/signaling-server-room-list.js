@@ -16,7 +16,7 @@ class SignalingServerRoomList {
 
     constructor() {
 
-        console.log("SignalingRoomList constructor");
+        console.log("~~~ Initializing SignalingRoomList ~~~");
 
         this.lastConnectionsId = 0;
 

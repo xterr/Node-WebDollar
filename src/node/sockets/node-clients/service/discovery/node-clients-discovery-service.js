@@ -12,7 +12,7 @@ class NodeDiscoveryService {
 
     constructor(){
 
-        console.log("NodeDiscover constructor");
+        console.log("~~~ Initializing NodeDiscover ~~~");
 
         //in common
         this.fallbackLists = [

@@ -18,7 +18,7 @@ class NodesList {
 
     constructor(){
 
-        console.log("NodesList constructor");
+        console.log("~~~ Initializing NodesList ~~~");
 
         this.emitter = new EventEmitter();
         this.emitter.setMaxListeners(2000);

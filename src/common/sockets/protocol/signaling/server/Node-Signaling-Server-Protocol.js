@@ -11,7 +11,7 @@ class NodeSignalingServerProtocol {
 
     constructor(){
 
-        console.log("NodeSignalingServerProtocol constructor");
+        console.log("~~~ Initializing NodeSignalingServerProtocol ~~~");
 
        NodeSignalingServerService.startConnectingWebPeers();
     }

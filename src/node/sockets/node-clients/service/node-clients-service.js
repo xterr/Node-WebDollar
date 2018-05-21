@@ -6,21 +6,15 @@ import NodesList from 'node/lists/Nodes-List'
 
 class NodeClientsService {
 
-
     constructor(){
-        console.log("NodeClientsService constructor");
-
+        console.log("~~~ Initializing NodeClientsService ~~~");
     }
-
 
     startService(){
         NodesWaitlist.initializeWaitlist();
         NodeDiscoveryService.startDiscovery();
         NodesWaitlistConnecting.startConnecting();
     }
-
-
-
 
 }
 

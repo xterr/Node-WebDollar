@@ -284,7 +284,7 @@ class InterfaceBlockchainProtocolForkSolver{
 
             // TODO you can paralyze the downloading code from multiple sockets
 
-            console.log("nextBlockHeight", nextBlockHeight);
+            console.log("Download block - ", nextBlockHeight);
 
             StatusEvents.emit( "agent/status", {message: "Synchronizing - Downloading Block", blockHeight: nextBlockHeight, blockHeightMax: fork.forkChainLength } );
 

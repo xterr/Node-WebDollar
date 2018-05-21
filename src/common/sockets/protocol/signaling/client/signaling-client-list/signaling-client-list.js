@@ -13,7 +13,7 @@ class SignalingClientList {
 
     constructor(){
 
-        console.log("SignalingRoomList constructor");
+        console.log("~~~ Initializing SignalingRoomList ~~~");
 
         this.connected = [];
 
