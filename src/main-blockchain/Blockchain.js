@@ -153,7 +153,7 @@ class Blockchain{
         console.warn("###############################################");
 
         let suspendMining = false;
-        if (!this.blockchain.light || (this.blockchain.light && NodesList.nodes.length <= 0))
+        if (this.blockchain.agent.light && NodesList.nodes.length <= 0)
             suspendMining = true;
 
         if (suspendMining) {
