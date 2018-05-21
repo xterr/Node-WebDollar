@@ -153,8 +153,11 @@ class Blockchain{
         console.warn("###############################################");
 
         let suspendMining = false;
-        if (this.blockchain.agent.light && NodesList.nodes.length <= 0)
+        if (!this.blockchain.agent.light  && (this.blockchain.agent.light && NodesList.nodes.length <= 0)){
             suspendMining = true;
+            console.error("################################################################################################################stopmining")
+        }
+
 
         if (suspendMining) {
             StatusEvents.emit('blockchain/status', {message: "Start Synchronizing"});

@@ -145,7 +145,6 @@ class InterfaceBlockchainMining extends  InterfaceBlockchainMiningBasic{
             if (showMiningOutput)
                 this.setMiningHashRateInterval();
 
-
             let answer;
 
             try {
