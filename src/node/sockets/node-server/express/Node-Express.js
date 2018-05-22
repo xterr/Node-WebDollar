@@ -1,6 +1,7 @@
 import BlockchainGenesis from 'common/blockchain/global/Blockchain-Genesis'
 import InterfaceBlockchainAddressHelper from "common/blockchain/interface-blockchain/addresses/Interface-Blockchain-Address-Helper";
 import NodesWaitlist from 'node/lists/waitlist/Nodes-Waitlist'
+import NODES_TYPE from "node/lists/types/Nodes-Type"
 
 const https = require('https');
 const http = require('http');
@@ -79,9 +80,6 @@ class NodeExpress{
 
                     this.SSL = true;
 
-                    consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.CLIENT.MAXIMUM_CONNECTIONS_IN_TERMINAL_WAITLIST = consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.CLIENT.SSL.MAXIMUM_CONNECTIONS_IN_TERMINAL_WAITLIST_WHEN_SSL;
-                    consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.CLIENT.MAXIMUM_CONNECTIONS_IN_TERMINAL_WAITLIST_FALLBACK = consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.CLIENT.SSL.MAXIMUM_CONNECTIONS_IN_TERMINAL_WAITLIST_FALLBACK_WHEN_SSL;
-
                     this._initializeRouter();
 
                     console.info("========================================");
@@ -139,18 +137,24 @@ class NodeExpress{
         // respond with "hello world" when a GET request is made to the homepage
         this.app.get('/', (req, res) => {
 
+            let lastBlock = Blockchain.blockchain.blocks.last;
+
             res.json({
 
                 protocol: consts.SETTINGS.NODE.PROTOCOL,
                 version: consts.SETTINGS.NODE.VERSION,
                 blocks: {
                     length: Blockchain.blockchain.blocks.length,
-                    lastBlockHash: Blockchain.blockchain.blocks.last.hash.toString("hex"),
+                    lastBlockHash: lastBlock !== undefined ? Blockchain.blockchain.blocks.last.hash.toString("hex") : '',
                 },
+                networkHashRate: Blockchain.blockchain.blocks.networkHashRate,
                 sockets:{
                     clients: NodesList.countNodesByConnectionType(CONNECTIONS_TYPE.CONNECTION_CLIENT_SOCKET),
                     servers: NodesList.countNodesByConnectionType(CONNECTIONS_TYPE.CONNECTION_SERVER_SOCKET),
                     webpeers: NodesList.countNodesByConnectionType(CONNECTIONS_TYPE.CONNECTION_WEBRTC),
+                },
+                waitlist:{
+                    list: NodesWaitlist.getJSONList( NODES_TYPE.NODE_TERMINAL, false ),
                 }
 
             });

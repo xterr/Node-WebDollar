@@ -27,8 +27,8 @@ class NodesWaitlist {
         this.MAX_FULLNODE_WAITLIST_CONNECTIONS = 500;
         this.MAX_LIGHTNODE_WAITLIST_CONNECTIONS = 500;
 
-        this.MAX_ERROR_TRIALS_FALLBACK = 100;
-        this.MAX_ERROR_TRIALS_SIMPLE = 5;
+        this.MAX_ERROR_TRIALS_FALLBACK = 1000;
+        this.MAX_ERROR_TRIALS_SIMPLE = 50;
 
     }
 
@@ -290,6 +290,26 @@ class NodesWaitlist {
         if ( answer.waitlist !== null) return answer.waitlist.isFallback;
 
         return false;
+    }
+
+    getJSONList(listType, fallback){
+
+        let list = [];
+
+        if (listType === NODES_TYPE.NODE_TERMINAL ) list = this.waitListFullNodes;
+        else if ( listType === NODES_TYPE.NODE_WEB_PEER ) list = this.waitListLightNodes;
+
+        let answer = [];
+
+        for (let i=0; i<list.length; i++){
+
+            if (fallback === undefined || (fallback === list[i].isFallback))
+                answer.push(list[i].toJSON() );
+
+        }
+
+        return answer;
+
     }
 
 }

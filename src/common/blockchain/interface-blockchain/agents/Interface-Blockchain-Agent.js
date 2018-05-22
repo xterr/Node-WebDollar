@@ -7,7 +7,8 @@ import Blockchain from "main-blockchain/Blockchain"
 import AGENT_STATUS from "./Agent-Status";
 import consts from 'consts/const_global'
 import InterfaceBlockchainAgentBasic from "./Interface-Blockchain-Agent-Basic"
-import NODES_TYPE from "../../../../node/lists/types/Nodes-Type";
+import NODES_TYPE from "node/lists/types/Nodes-Type";
+import NodesWaitlistConnecting from 'node/lists/waitlist/Nodes-Waitlist-Connecting'
 
 let NodeExpress;
 
@@ -135,7 +136,7 @@ class InterfaceBlockchainAgent extends InterfaceBlockchainAgentBasic{
                     let diffBlocks = this.blockchain.blocks.length - this.lastTimeChecked.blocks;
 
                     if (  NodesList.nodes.length > 0 && diffBlocks >= 0 && diffBlocks < consts.SETTINGS.PARAMS.CONNECTIONS.FORKS.MAXIMUM_BLOCKS_TO_DOWNLOAD &&
-                          NodesList.nodes.length >= consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.CLIENT.MAXIMUM_CONNECTIONS_IN_TERMINAL_WAITLIST_FALLBACK / 2) {
+                          NodesList.nodes.length >= NodesWaitlistConnecting.connectingMaximum.minimum_fallbacks + NodesWaitlistConnecting.connectingMaximum.minimum_waitlist) {
 
                         this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED;
 
@@ -200,7 +201,7 @@ class InterfaceBlockchainAgent extends InterfaceBlockchainAgentBasic{
 
         this._status = newValue;
 
-        if ( [AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED, AGENT_STATUS.AGENT_STATUS_NOT_SYNCHRONIZED].indexOf(newValue) >= 0){
+        if ( [AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED, AGENT_STATUS.AGENT_STATUS_NOT_SYNCHRONIZED, AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_SLAVES].indexOf(newValue) >= 0){
 
             clearTimeout(this._startAgentTimeOut);
             this._startAgentTimeOut = undefined;
@@ -210,7 +211,7 @@ class InterfaceBlockchainAgent extends InterfaceBlockchainAgentBasic{
 
         }
 
-        if ( AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED === newValue)
+        if ( [AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED, AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_SLAVES].indexOf(newValue) >= 0)
 
             this._eventEmitter.emit('agent/synchronized', {
                 result: true,
