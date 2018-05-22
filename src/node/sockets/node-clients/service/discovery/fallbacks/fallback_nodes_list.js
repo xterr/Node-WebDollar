@@ -38,16 +38,16 @@ export default {
         //--------------WebDollar FallBack Nodes-------------------
         //---------------------------------------------------------
 
-        // {"addr": ["https://webdollar.ddns.net:80"]},
-        // {"addr": ["https://webdollar.ddns.net:8080"]},
-        // {"addr": ["https://webdollar.ddns.net:8081"]},
+        {"addr": ["https://webdollar.ddns.net:80"]},
+        {"addr": ["https://webdollar.ddns.net:8080"]},
+        {"addr": ["https://webdollar.ddns.net:8081"]},
 
-        {"addr": ["https://skyhub.me:80"]},
-        {"addr": ["https://presa7.ro:80"]},
-
-        {"addr": ["https://webdollar-vps1.ddns.net:80"]},
-        {"addr": ["https://webdollar-vps2.ddns.net:80"]},
-        {"addr": ["https://webdollar-vps3.ddns.net:80"]},
+        // {"addr": ["https://skyhub.me:80"]},
+        // {"addr": ["https://presa7.ro:80"]},
+        //
+        // {"addr": ["https://webdollar-vps1.ddns.net:80"]},
+        // {"addr": ["https://webdollar-vps2.ddns.net:80"]},
+        // {"addr": ["https://webdollar-vps3.ddns.net:80"]},
 
         {"addr": ["https://hcern.ddns.net:80"]},
         {"addr": ["https://hcern.ddns.net:443"]},
