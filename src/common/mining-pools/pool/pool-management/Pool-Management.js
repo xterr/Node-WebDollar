@@ -24,8 +24,8 @@ class PoolManagement{
         this.poolSettings = new PoolSettings(wallet, this);
         this.poolWorkManagement = new PoolWorkManagement( this, blockchain );
         this.poolProtocol = new PoolProtocol( this );
-        this.poolStatistics = new PoolStatistics( this );
         this.poolData = new PoolData(this, databaseName);
+        this.poolStatistics = new PoolStatistics( this );
 
         this.poolRewardsManagement = new PoolRewardsManagement(this, this.poolData, blockchain);
 
@@ -37,14 +37,22 @@ class PoolManagement{
 
     async initializePoolManagement(poolFee){
 
-        await this.poolData.initializePoolData();
+        let answer;
 
-        let answer = await this.poolSettings.initializePoolSettings(poolFee);
-        console.info("The url is just your domain: "+ this.poolSettings.poolURL);
+        try {
 
-        if (!answer ){
-            throw {message: "Pool Couldn't be started"};
-            return false;
+            answer = await this.poolSettings.initializePoolSettings(poolFee);
+
+            console.info("The url is just your domain: " + this.poolSettings.poolURL);
+
+            answer = await this.poolData.initializePoolData();
+
+            if (!answer)
+                throw {message: "Pool Couldn't be started"};
+
+            answer = await this.poolStatistics.initializePoolStatistics();
+        } catch (exception){
+            console.error("initializePoolManagement raised an error", exception);
         }
 
         this.poolInitialized = true;
@@ -53,10 +61,10 @@ class PoolManagement{
 
     }
 
-    async startPool( forceStartMinerPool = false ){
+    async startPool( forceStartPool = false ){
 
         if (this.poolSettings.poolURL !== '' && this.poolSettings.poolURL !== undefined)
-            return await this.setPoolStarted(true, forceStartMinerPool);
+            return await this.setPoolStarted(true, forceStartPool);
         else
             console.error("Couldn't start the Pool because the poolURL is empty");
 
@@ -68,7 +76,7 @@ class PoolManagement{
     }
 
     receivePoolWork(minerInstance, work){
-       return this.poolWorkManagement.processWork(minerInstance, work)
+        return this.poolWorkManagement.processWork(minerInstance, work)
     }
 
     /**
@@ -129,15 +137,27 @@ class PoolManagement{
             await this.poolSettings.setPoolActivated(value);
 
             if (value) {
-                await this.poolProtocol.poolConnectedServersProtocol.insertServersListWaitlist( this.poolSettings._poolServers );
+
                 this.poolStatistics.startInterval();
                 this.poolWorkManagement.poolWork.startGarbageCollector();
                 await this.poolProtocol._startPoolProtocol();
+
+                await this.poolProtocol.poolConnectedServersProtocol.insertServersListWaitlist( this.poolSettings._poolServers );
+                consts.MINING_POOL.MINING_POOL_STATUS = consts.MINING_POOL_TYPE.MINING_POOL;
+
+                this.poolData.connectedMinerInstances.startPoolDataConnectedMinerInstances();
+
+                Blockchain.PoolManagement.poolSettings.printPoolSettings();
+
             }
             else {
                 await this.poolProtocol._stopPoolProtocol();
                 this.poolWorkManagement.poolWork.stopGarbageCollector();
                 this.poolStatistics.clearInterval();
+
+                consts.MINING_POOL.MINING_POOL_STATUS = consts.MINING_POOL_TYPE.MINING_POOL_DISABLED;
+
+                this.poolData.connectedMinerInstances.stopPoolDataConnectedMinerInstances();
             }
 
             StatusEvents.emit("pools/status", {result: value, message: "Pool Started changed" });

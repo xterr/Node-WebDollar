@@ -23,9 +23,6 @@ class InterfaceBlockchainMiningWorkers extends InterfaceBlockchainMining {
 
         this.workers = new InterfaceBlockchainMiningWorkersList(this);
 
-        this.bestHash =   consts.BLOCKCHAIN.BLOCKS_MAX_TARGET_BUFFER ;
-        this.bestHashNonce = -1;
-
     }
 
 
@@ -50,7 +47,6 @@ class InterfaceBlockchainMiningWorkers extends InterfaceBlockchainMining {
         this.end = end;
 
         this._nonce = start;
-
 
 
         this._workerFinished = false;
@@ -139,14 +135,14 @@ class InterfaceBlockchainMiningWorkers extends InterfaceBlockchainMining {
 
     checkFinished(){
 
-        if (this._nonce > this.end || (this.started === false) || (this.reset && this.useResetConsensus)){
+        if (this._nonce > this.end || (this.started === false) || this.resetForced || (this.reset && this.useResetConsensus)){
 
             this.workers.suspendWorkers();
             this._suspendMiningWorking();
 
             if (this._workerResolve !== null && this._workerResolve !== undefined)
                 this._workerResolve( { //we didn't find anything
-                    result:false,
+                    result: false,
                     hash: this.bestHash,
                     nonce: this.bestHashNonce
                 });
@@ -202,39 +198,25 @@ class InterfaceBlockchainMiningWorkers extends InterfaceBlockchainMining {
 
                 if (compare === -1){
 
-                    //verify block with the worker block
-                    let match = true;
-
-                    for (let i = 0, l=this.block.length;  i < l;  i++)
-                        if (this.block[i] !== event.data.block[i] ) // do not match
-                            match = false;
-
-                    //verify the  bestHash with  the current target
-                    if (match) {
 
 
-                        this.bestHash = new Buffer(event.data.hash);
-                        this.bestHashNonce = event.data.nonce;
+                    this.bestHash = new Buffer(event.data.hash);
+                    this.bestHashNonce = event.data.nonce;
 
-                        if (this.bestHash.compare(this.difficulty) <= 0) {
+                    if (this.bestHash.compare(this.difficulty) <= 0) {
 
-                            console.log('processing done');
+                        this._suspendMiningWorking();
+                        this.workers.suspendWorkers();
 
-                            this._suspendMiningWorking();
-                            this.workers.suspendWorkers();
+                        this._workerResolve({
+                            result: true,
+                            hash: new Buffer(event.data.hash),
+                            nonce: event.data.nonce,
+                        });
 
-                            this._workerResolve({
-                                result: true,
-                                hash: new Buffer(event.data.hash),
-                                nonce: event.data.nonce,
-                            });
-
-                            return;
-
-                        }
+                        return;
 
                     }
-
 
                 }
             }

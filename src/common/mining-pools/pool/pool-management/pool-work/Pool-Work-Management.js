@@ -1,12 +1,13 @@
-import Serialization from 'common/utils/Serialization';
 import BufferExtended from "common/utils/BufferExtended";
+
+import Serialization from 'common/utils/Serialization';
 import consts from 'consts/const_global';
 import WebDollarCoins from "common/utils/coins/WebDollar-Coins";
 import RevertActions from "common/utils/Revert-Actions/Revert-Actions";
 import NodeBlockchainPropagation from "common/sockets/protocol/propagation/Node-Blockchain-Propagation";
 import PoolWork from "./Pool-Work";
-import Blockchain from "main-blockchain/Blockchain";
-import Utils from "common/utils/helpers/Utils";
+import StatusEvents from "common/events/Status-Events";
+import PoolNewWorkManagement from "./Pool-New-Work-Management"
 
 class PoolWorkManagement{
 
@@ -15,34 +16,30 @@ class PoolWorkManagement{
         this.poolManagement = poolManagement;
         this.blockchain = blockchain;
 
-        this.poolWork = new PoolWork(poolManagement, blockchain);
+        this.poolNewWorkManagement = new PoolNewWorkManagement(poolManagement, this, blockchain);
 
+        this.poolWork = new PoolWork(poolManagement, blockchain);
     }
 
 
+    async getWork(minerInstance,  blockInformationMinerInstance){
 
-
-    async getWork(minerInstance){
+        if (minerInstance === undefined) throw {message: "minerInstance is undefined"};
 
         let hashes = minerInstance.hashesPerSecond;
         if (hashes === undefined ) hashes = 500;
 
-        let blockInformationMinerInstance = this.poolManagement.poolData.lastBlockInformation._addBlockInformationMinerInstance(minerInstance);
+        if (blockInformationMinerInstance === undefined)
+            blockInformationMinerInstance = this.poolManagement.poolData.lastBlockInformation._addBlockInformationMinerInstance(minerInstance);
 
         await this.poolWork.lastBlockPromise; //it's a promise, let's wait
 
         if ( this.poolWork.lastBlock === undefined || ( this.poolWork.lastBlockNonce + hashes ) > 0xFFFFFFFF  ||
-            (!this.blockchain.semaphoreProcessing.processing && ( this.poolWork.lastBlock.height !==  this.blockchain.blocks.length || !this.poolWork.lastBlock.hashPrev.equals( this.blockchain.blocks.last.hash ))))
+            (!this.blockchain.semaphoreProcessing.processing && ( this.poolWork.lastBlock.height !==  this.blockchain.blocks.length || !this.poolWork.lastBlock.hashPrev.equals( this.blockchain.blocks.last.hash ))) )
             await this.poolWork.getNextBlockForWork();
 
 
-        let serialization = Buffer.concat( [
-            Serialization.serializeBufferRemovingLeadingZeros( Serialization.serializeNumber4Bytes(this.poolWork.lastBlock.height) ),
-            Serialization.serializeBufferRemovingLeadingZeros( this.poolWork.lastBlock.difficultyTargetPrev ),
-            this.poolWork.lastBlock.computedBlockPrefix
-        ]);
-
-        this.poolWork.lastBlockElement.instances[minerInstance.publicKeyString] = this.poolWork.lastBlock;
+        this.poolWork.lastBlockElement.instances[minerInstance.socket.node.sckAddress.uuid] = this.poolWork.lastBlock;
 
         let answer = {
 
@@ -53,105 +50,149 @@ class PoolWorkManagement{
             start: this.poolWork.lastBlockNonce,
             end: this.poolWork.lastBlockNonce + hashes,
 
-            serialization: serialization,
         };
+
+        minerInstance.lastBlockInformation =  blockInformationMinerInstance;
+        minerInstance.workBlock =  this.poolWork.lastBlock;
+        minerInstance.miner.dateActivity = new Date().getTime();
 
         this.poolWork.lastBlockNonce += hashes;
 
         blockInformationMinerInstance.workBlock = this.poolWork.lastBlock;
 
+        if (this.poolManagement.poolSettings.poolUseSignatures) {
+
+            let message = Buffer.concat([this.poolWork.lastBlockSerialization, Serialization.serializeNumber4Bytes(answer.start), Serialization.serializeNumber4Bytes(answer.end)]);
+            answer.sig = this.poolManagement.poolSettings.poolDigitalSign(message);
+
+        }
+
         return answer;
 
     }
 
-    async processWork(minerInstance, work){
+    async processWork(minerInstance, work, prevBlock){
+
+        let result = false;
 
         try{
 
+            if (minerInstance === undefined) throw {message: "minerInstance is undefined"};
             if (work === null || typeof work !== "object") throw {message: "work is undefined"};
 
             if ( !Buffer.isBuffer(work.hash) || work.hash.length !== consts.BLOCKCHAIN.BLOCKS_POW_LENGTH) throw {message: "hash is invalid"};
             if ( typeof work.nonce !== "number" ) throw {message: "nonce is invalid"};
-            if ( typeof work.timeDiff !== "number" ) throw {message: "timeDiff is invalid"};
 
             let blockInformationMinerInstance = this.poolManagement.poolData.lastBlockInformation._addBlockInformationMinerInstance(minerInstance);
 
-            if (blockInformationMinerInstance.workBlock === undefined)
-                throw {message: "no block"};
+            if ( (prevBlock  || blockInformationMinerInstance.workBlock) === undefined)
+                throw {message: "miner instance - no block"};
 
-            let hashesFactor = Math.min(5, (5000/work.timeDiff));
-            hashesFactor = Math.max(0.01, hashesFactor);
+            if (work.timeDiff !== undefined) {
+                if (typeof work.timeDiff !== "number") throw {message: "timeDiff is invalid"};
 
-            minerInstance.hashesPerSecond *= Math.floor( hashesFactor );
-            minerInstance.hashesPerSecond = Math.min( minerInstance.hashesPerSecond , 5000);
-            minerInstance.hashesPerSecond = Math.max( minerInstance.hashesPerSecond , 100);
+                let hashesFactor = Math.min(10, ( 80000 / work.timeDiff )); //80 sec
+                hashesFactor = Math.max(0.2, hashesFactor);
+
+                let hashesPerSecond = Math.floor( minerInstance.hashesPerSecond * hashesFactor);
+                minerInstance.hashesPerSecond = Math.max( 100, Math.min( hashesPerSecond, 400000 ));
+
+            }
 
 
-            if ( false === await blockInformationMinerInstance.validateWorkHash( work.hash, work.nonce )  )
-                throw {message: "block was incorrectly mined"};
+            if ( false === await blockInformationMinerInstance.validateWorkHash( work.hash, work.nonce, prevBlock )  )
+                throw {message: "block was incorrectly mined", work: work };
 
             blockInformationMinerInstance.workHash = work.hash;
             blockInformationMinerInstance.workHashNonce = work.nonce;
 
+            if (Math.random() < 0.001)
+                console.log("Work: ", work);
+
+            if ( work.result && prevBlock === undefined ) { //it is a solution and prevBlock is undefined
+
+                console.warn("----------------------------------------------------------------------------");
+                console.warn("----------------------------------------------------------------------------");
+                console.warn("WebDollar Block was mined in Pool 1 ", work.hash.toString("hex"), "nonce", work.nonce );
+                console.warn("----------------------------------------------------------------------------");
+                console.warn("----------------------------------------------------------------------------");
+
+                if ( await blockInformationMinerInstance.wasBlockMined() ){
+
+                    console.warn("----------------------------------------------------------------------------");
+                    console.warn("----------------------------------------------------------------------------");
+                    console.warn("WebDollar Block was mined in Pool 2 ", blockInformationMinerInstance.workBlock.height, " nonce (", blockInformationMinerInstance.workHashNonce + ")", blockInformationMinerInstance.workHash.toString("hex"), " reward", (blockInformationMinerInstance.workBlock.reward / WebDollarCoins.WEBD), "WEBD", blockInformationMinerInstance.workBlock.data.minerAddress.toString("hex"));
+                    console.warn("----------------------------------------------------------------------------");
+                    console.warn("----------------------------------------------------------------------------");
+
+
+                    //returning false, because a new fork was changed in the mean while
+                    if (this.blockchain.blocks.length !== blockInformationMinerInstance.workBlock.height)
+                        throw {message: "pool: block is already too old"};
+
+                    let revertActions = new RevertActions(this.blockchain);
+
+                    try {
+
+                        if (await this.blockchain.semaphoreProcessing.processSempahoreCallback(async () => {
+
+                                //returning false, because a new fork was changed in the mean while
+                                if (this.blockchain.blocks.length !== blockInformationMinerInstance.workBlock.height)
+                                    throw {message: "pool: block is already too old for processing"};
+
+                                blockInformationMinerInstance.workBlock.hash = blockInformationMinerInstance.workHash;
+                                blockInformationMinerInstance.workBlock.nonce = blockInformationMinerInstance.workHashNonce;
+
+                                return this.blockchain.includeBlockchainBlock(blockInformationMinerInstance.workBlock, false, ["all"], true, revertActions);
+
+                            }) === false) throw {message: "Mining2 returned false"};
+
+                        NodeBlockchainPropagation.propagateLastBlockFast(blockInformationMinerInstance.workBlock);
+
+                        //confirming transactions
+                        blockInformationMinerInstance.workBlock.data.transactions.confirmTransactions();
+
+
+                        blockInformationMinerInstance.blockInformation.block = blockInformationMinerInstance.workBlock;
+                        this.poolManagement.poolData.addBlockInformation();
+
+
+                        blockInformationMinerInstance.poolWork = Buffer.from("00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF","hex");
+                        blockInformationMinerInstance.poolWorkNonce = -1;
+
+                        StatusEvents.emit("blockchain/new-blocks", { });
+
+                    } catch (exception){
+
+                        console.error("PoolWork include raised an exception", exception);
+                        revertActions.revertOperations();
+
+                        this.poolWork.getNextBlockForWork();
+                    }
+
+                    revertActions.destroyRevertActions();
+
+                }
+
+
+            }
+
             blockInformationMinerInstance.calculateDifficulty();
-            blockInformationMinerInstance.adjustDifficulty();
+            blockInformationMinerInstance.adjustDifficulty(undefined, true);
 
             //statistics
             this.poolManagement.poolStatistics.addStatistics(blockInformationMinerInstance._workDifficulty, minerInstance);
 
-            if (work.result && await blockInformationMinerInstance.wasBlockMined() && blockInformationMinerInstance.blockInformation.block === undefined ) {
-
-                console.warn("----------------------------------------------------------------------------");
-                console.warn("WebDollar Block was mined in Pool ", blockInformationMinerInstance.workBlock.height, " nonce (", blockInformationMinerInstance.workHashNonce + ")", blockInformationMinerInstance.workHash.toString("hex"), " reward", (blockInformationMinerInstance.workBlock.reward / WebDollarCoins.WEBD), "WEBD", blockInformationMinerInstance.workBlock.data.minerAddress.toString("hex"));
-                console.warn("----------------------------------------------------------------------------");
-
-                //returning false, because a new fork was changed in the mean while
-                if (this.blockchain.blocks.length !== blockInformationMinerInstance.workBlock.height)
-                    throw {message: "pool: block is already too old"};
-
-                let revertActions = new RevertActions(this.blockchain);
-
-                try {
-
-                    if (await this.blockchain.semaphoreProcessing.processSempahoreCallback(async () => {
-
-                            //returning false, because a new fork was changed in the mean while
-                            if (this.blockchain.blocks.length !== blockInformationMinerInstance.workBlock.height)
-                                throw {message: "pool: block is already too old for processing"};
-
-                            blockInformationMinerInstance.workBlock.hash = blockInformationMinerInstance.workHash;
-                            blockInformationMinerInstance.workBlock.nonce = blockInformationMinerInstance.workHashNonce;
-
-                            return this.blockchain.includeBlockchainBlock(blockInformationMinerInstance.workBlock, false, ["all"], true, revertActions);
-
-                        }) === false) throw {message: "Mining2 returned false"};
-
-                    NodeBlockchainPropagation.propagateLastBlockFast(blockInformationMinerInstance.workBlock);
-
-                    //confirming transactions
-                    blockInformationMinerInstance.workBlock.data.transactions.confirmTransactions();
-
-
-                    blockInformationMinerInstance.blockInformation.block = blockInformationMinerInstance.workBlock;
-                    this.poolManagement.poolData.addBlockInformation();
-
-                } catch (exception){
-                    console.error("PoolWork include raised an exception", exception);
-                    revertActions.revertOperations();
-                }
-
-                revertActions.destroyRevertActions();
-
-            }
-
-            return {result: true, reward: minerInstance.miner.rewardTotal, confirmed: minerInstance.miner.rewardConfirmedTotal };
+            result = true;
 
         } catch (exception){
 
-            console.error("Pool Work Management raised an error", exception);
-            return {result: false, message:exception.message, reward: minerInstance.miner.rewardTotal, confirmed: minerInstance.miner.rewardConfirmedTotal  };
+            if (exception.message === "block was incorrectly mined" && Math.random() < 0.01 )
+                console.error("Pool Work Management raised an error", exception);
 
         }
+
+        return {result: result, reward: minerInstance.miner.rewardTotal, confirmed: minerInstance.miner.rewardConfirmedTotal, refReward: minerInstance.miner.referrals.rewardReferralsTotal, refConfirmed: minerInstance.miner.referrals.rewardReferralsConfirmed  }
 
     }
 

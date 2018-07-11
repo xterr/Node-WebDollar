@@ -1,7 +1,8 @@
 import NODES_CONSENSUS_TYPE from "node/lists/types/Node-Consensus-Type";
 import SocketAddress from "common/sockets/protocol/extend-socket/Socket-Address";
 
-let io = require('socket.io');
+const io = require('socket.io');
+const publicIp = require('public-ip');
 
 import consts from 'consts/const_global'
 import SocketExtend from 'common/sockets/protocol/extend-socket/Socket-Extend'
@@ -21,12 +22,12 @@ const ROOMS = {
 
     TERMINALS:{
         TIME_TO_PASS_TO_CONNECT_NEW_CLIENT : 4*1000,
-        SERVER_FREE_ROOM : 40,
+        SERVER_FREE_ROOM : 20,
     },
 
     BROWSERS:{
         TIME_TO_PASS_TO_CONNECT_NEW_CLIENT : 4*1000,
-        SERVER_FREE_ROOM : 100,
+        SERVER_FREE_ROOM : 50,
     },
 
 };
@@ -58,17 +59,28 @@ class NodeServer {
                 serverSits : ROOMS.BROWSERS.SERVER_FREE_ROOM,
             },
 
-        }
+        };
 
     }
 
-    getServerHTTPAddress() {
+    getServerHTTPAddress(getIP) {
 
         if ( !this.loaded || !NodeExpress.loaded ) return '';
         if (NodeExpress.port === 0) return '';
         if (NodeExpress.domain  === '') return '';
 
+        if ( getIP ){
+
+            return new Promise(async (resolve)=>{
+
+                resolve (  'http' + ( NodeExpress.SSL ? 's' : '') + '://' + await publicIp.v4() + ":" + NodeExpress.port );
+
+            })
+
+        }
+
         return 'http' + ( NodeExpress.SSL ? 's' : '') + '://' + NodeExpress.domain  + ":" + NodeExpress.port;
+
 
     }
 
@@ -104,6 +116,7 @@ class NodeServer {
             server.on("connection", async (socket) => {
 
                 if (socket.request._query["msg"] !== "HelloNode"){
+                    console.error("No Hello Msg");
                     socket.disconnect();
                     return
                 }
@@ -165,7 +178,7 @@ class NodeServer {
 
                     if (new Date().getTime() - this._rooms.terminals.timeLastConnected >= ROOMS.TERMINALS.TIME_TO_PASS_TO_CONNECT_NEW_CLIENT){
 
-                        this._rooms.terminals.serverSits = ROOMS.TERMINALS.SERVER_FREE_ROOM;
+                        this._rooms.terminals.serverSits = (Blockchain.isPoolActivated ? 10 : 1 ) * ROOMS.TERMINALS.SERVER_FREE_ROOM;
                         this._rooms.terminals.timeLastConnected = new Date().getTime();
 
                     }else {
@@ -180,7 +193,7 @@ class NodeServer {
                 else if (NODE_TYPE.NODE_WEB_PEER === nodeType && this._rooms.browsers.serverSits <= 0)
                         if (new Date().getTime() - this._rooms.browsers.timeLastConnected >= ROOMS.BROWSERS.TIME_TO_PASS_TO_CONNECT_NEW_CLIENT) {
 
-                            this._rooms.browsers.serverSits = ROOMS.BROWSERS.SERVER_FREE_ROOM;
+                            this._rooms.browsers.serverSits = (Blockchain.isPoolActivated ? 10 : 1 )  * ROOMS.BROWSERS.SERVER_FREE_ROOM;
                             this._rooms.browsers.timeLastConnected = new Date().getTime();
 
                         } else return NodePropagationList.propagateWaitlistSimple(socket, nodeType, true); //it will also disconnect the socket
@@ -191,7 +204,8 @@ class NodeServer {
 
                 let connections = NodesList.countNodeSocketByAddress( sckAddress, "all" );
 
-                if ( connections.countUUIDs === 0 && connections.countIPs < consts.SETTINGS.PARAMS.CONNECTIONS.NO_OF_IDENTICAL_IPS ){
+                //in case it is a pool open
+                if ( connections.countUUIDs === 0 && connections.countIPs < ( Blockchain.isPoolActivated ? consts.MINING_POOL.CONNECTIONS.NO_OF_IDENTICAL_IPS : consts.SETTINGS.PARAMS.CONNECTIONS.NO_OF_IDENTICAL_IPS )){
 
                     SocketExtend.extendSocket(socket, sckAddress, undefined, undefined, 1);
 
@@ -307,17 +321,20 @@ class NodeServer {
                 }
 
 
+        if (!Blockchain.isPoolActivated ) {
+
+            if (NodesList.countNodesByType(NODE_TYPE.NODE_TERMINAL) > consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.MAXIMUM_CONNECTIONS_FROM_TERMINAL / 2) {
+
+                for (let i = 0; i < NodesList.nodes.length; i++)
+                    if (NodesList.nodes[i].socket.node !== undefined && NodesList.nodes[i].socket.node.protocol.nodeType === NODE_TYPE.NODE_TERMINAL)
+                        if (!NodesList.nodes[i].isFallback && NodesList.nodes[i].date - time > TIME_DISCONNECT_TERMINAL)
+                            NodesList.nodes[i].socket.disconnect();
+
+            }
+
+        }
 
 
-        let count = NodesList.countNodesByType( NODE_TYPE.NODE_TERMINAL );
-        if ( count < consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.MAXIMUM_CONNECTIONS_FROM_TERMINAL / 2 )
-            return; //nothing to do
-
-
-        for (let i=0; i<NodesList.nodes.length; i++)
-            if (NodesList.nodes[i].socket.node !== undefined && NodesList.nodes[i].socket.node.protocol.nodeType === NODE_TYPE.NODE_TERMINAL)
-                if ( !NodesList.nodes[i].isFallback && NodesList.nodes[i].date - time > TIME_DISCONNECT_TERMINAL )
-                        NodesList.nodes[i].socket.disconnect();
 
     }
 

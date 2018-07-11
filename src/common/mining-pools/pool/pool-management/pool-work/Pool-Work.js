@@ -2,6 +2,8 @@ import Blockchain from "main-blockchain/Blockchain";
 import Utils from "common/utils/helpers/Utils";
 import BlockchainGenesis from 'common/blockchain/global/Blockchain-Genesis';
 import consts from 'consts/const_global'
+import Serialization from 'common/utils/Serialization';
+import StatusEvents from "common/events/Status-Events";
 
 class PoolWork {
 
@@ -42,15 +44,18 @@ class PoolWork {
 
         this.lastBlockPromise = Utils.MakeQuerablePromise( new Promise( async (resolve)=>{
 
-            if (this.lastBlockPromise !== undefined )
-                console.log("promise: ", this.lastBlockPromise.isPending(), "    isFulfilled: ", this.lastBlockPromise.isFulfilled())
-
             this.lastBlock = await this.blockchain.mining.getNextBlock();
             this.lastBlockNonce = 0;
 
 
             if (this.lastBlock.computedBlockPrefix === null )
                 this.lastBlock._computeBlockHeaderPrefix();
+
+            this.lastBlockSerialization = Buffer.concat( [
+                Serialization.serializeBufferRemovingLeadingZeros( Serialization.serializeNumber4Bytes(this.lastBlock.height) ),
+                Serialization.serializeBufferRemovingLeadingZeros( this.lastBlock.difficultyTargetPrev ),
+                this.lastBlock.computedBlockPrefix
+            ]);
 
             this.lastBlockElement = {
                 block: this.lastBlock,
@@ -61,8 +66,11 @@ class PoolWork {
 
             this._blocksList.push(this.lastBlockElement);
 
-            if  (!this.blockchain.semaphoreProcessing.processing && ( this.lastBlock.height !==  this.blockchain.blocks.length || !this.lastBlock.hashPrev.equals( this.blockchain.blocks.last.hash )))
+            if  (!this.blockchain.semaphoreProcessing.processing && ( this.lastBlock.height !==  this.blockchain.blocks.length || !this.lastBlock.hashPrev.equals( this.blockchain.blocks.last.hash ))) {
                 console.error("ERRRORR!!! HASHPREV DOESN'T MATCH blocks.last.hash");
+                resolve(false);
+                return;
+            }
 
             resolve(true);
         }));
@@ -89,13 +97,15 @@ class PoolWork {
 
             if (!found)
                 //delete block
-                if (this._blocksList[i].block !== this.lastBlock && (time - this._blocksList[i].block.timeStamp > 5*consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK*1000)) {
+                if (this._blocksList[i].block !== this.lastBlock && ( (time - this._blocksList[i].block.timeStamp) > 5*consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK*1000)) {
 
                     for (let key in this._blocksList[i].instances)
                         if (this._blocksList[i].instances.hasOwnProperty(key))
                             this._blocksList[i].instances[key].workBlock = undefined;
 
-                    this._blocksList[i].block.destroyBlock();
+                    if (this._blocksList[i].block !== undefined)
+                        this._blocksList[i].block.destroyBlock();
+
                     this._blocksList[i].block = undefined;
                     this._blocksList[i].instances = undefined;
 

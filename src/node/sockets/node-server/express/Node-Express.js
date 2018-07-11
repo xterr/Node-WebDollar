@@ -1,7 +1,4 @@
-import BlockchainGenesis from 'common/blockchain/global/Blockchain-Genesis'
-import InterfaceBlockchainAddressHelper from "common/blockchain/interface-blockchain/addresses/Interface-Blockchain-Address-Helper";
 import NodesWaitlist from 'node/lists/waitlist/Nodes-Waitlist'
-import NODE_TYPE from "node/lists/types/Node-Type"
 
 const https = require('https');
 const http = require('http');
@@ -10,13 +7,11 @@ const express = require('express')
 const cors = require('cors');
 const fs = require('fs')
 import consts from 'consts/const_global'
-import Blockchain from "main-blockchain/Blockchain"
-import CONNECTIONS_TYPE from "node/lists/types/Connection-Type"
-import NodesList from 'node/lists/Nodes-List'
-import WebDollarCoins from "common/utils/coins/WebDollar-Coins"
-import BufferExtended from "common/utils/BufferExtended";
-import Serialization from "common/utils/Serialization";
-var BigNumber = require ('bignumber.js');
+
+import NodeAPIRouter from "../API-router/Node-API-Router"
+import NODE_API_TYPE from "../API-router/NODE_API_TYPE";
+
+import NodeServerSocketAPI from "../sockets/Node-Server-Socket-API"; //required because it will process the SocketAPI
 
 class NodeExpress{
 
@@ -55,7 +50,6 @@ class NodeExpress{
             this.app = express();
             this.app.use(cors({ credentials: true }));
 
-
             try {
                 this.app.use('/.well-known/acme-challenge', express.static('certificates/well-known/acme-challenge'))
             } catch (exception){
@@ -66,7 +60,7 @@ class NodeExpress{
 
             let options = {};
 
-            this.port = process.env.SERVER_PORT || consts.SETTINGS.NODE.PORT;
+            this.port = process.env.PORT || process.env.SERVER_PORT || consts.SETTINGS.NODE.PORT;
 
             this.loaded = true;
 
@@ -74,23 +68,55 @@ class NodeExpress{
 
                 if (!consts.SETTINGS.NODE.SSL) throw {message: "no ssl"};
 
-                this.domain = process.env.DOMAIN || this._extractDomain('./certificates/certificate.crt');
+                this.domain = process.env.DOMAIN;
 
-                console.info("========================================");
-                console.info("SSL certificate found for ", this.domain);
+                let privateKey='', privateKeys = ["private.key","privateKey","private.crt"];
+                for (let i=0; i<privateKeys.length; i++)
+                    if (fs.existsSync(`./certificates/${privateKeys[i]}`)){
+                        privateKey = `./certificates/${privateKeys[i]}`;
+                        break;
+                    }
 
-                if (this.domain === '')
-                    console.error("Your domain from certificate was not recognized");
+                let cert = '', certificates = ["certificate.crt", "crt.crt", "certificate"];
+                for (let i=0; i<certificates.length; i++)
+                    if (fs.existsSync(`./certificates/${certificates[i]}`)){
+                        cert = `./certificates/${certificates[i]}`;
+                        break;
+                    }
 
-                options.key = fs.readFileSync('./certificates/private.key', 'utf8');
-                options.cert = fs.readFileSync('./certificates/certificate.crt', 'utf8');
-                options.ca = fs.readFileSync('./certificates/ca_bundle.crt', 'utf8');
+                let caBundle = '', certificateBundles = ["ca_bundle.crt", "bundle.crt", "ca_bundle"];
+                for (let i=0; i<certificateBundles.length; i++)
+                    if (fs.existsSync(`./certificates/${certificateBundles[i]}`)){
+                        caBundle = `./certificates/${certificateBundles[i]}`;
+                        break;
+                    }
+
+                if (privateKey === '') throw {message: "private.key was not found"};
+                if (cert === '') throw {message: "certificate.crt was not found"};
+                if (caBundle === '') throw {message: "ca_bundle.crt was not found"};
+
+                try {
+                    if (this.domain === undefined || this.domain === "undefined") this.domain = this._extractDomain(cert);
+                } catch (exception){
+                    console.error("Couldn't determine the SSL Certificate Host Name");
+                }
+
+                options.key = fs.readFileSync(privateKey, 'utf8');
+                options.cert = fs.readFileSync(cert, 'utf8');
+                options.caBundle = fs.readFileSync(caBundle, 'utf8');
 
                 this.server = https.createServer(options, this.app).listen( this.port, ()=>{
 
+                    console.info("========================================");
+                    console.info("SSL certificate found for ", this.domain||'domain.com');
+
+                    if (this.domain === '')
+                        console.error("Your domain from certificate was not recognized");
+
+
                     this.SSL = true;
 
-                    this._initializeRouter();
+                    this._initializeRouter(this.app);
 
                     console.info("========================================");
                     console.info("HTTPS Express was opened on port "+ this.port);
@@ -109,6 +135,8 @@ class NodeExpress{
 
             } catch (exception){
 
+                console.error("HTTP Express raised an error", exception);
+
                 //cloudflare generates its own SSL certificate
                 this.server = http.createServer(this.app).listen(this.port, () => {
 
@@ -120,7 +148,7 @@ class NodeExpress{
 
                     consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.MAXIMUM_CONNECTIONS_FROM_TERMINAL = consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.MAXIMUM_CONNECTIONS_FROM_TERMINAL + consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.MAXIMUM_CONNECTIONS_FROM_BROWSER;
 
-                    this._initializeRouter();
+                    this._initializeRouter(this.app);
 
                     resolve(true);
 
@@ -141,333 +169,13 @@ class NodeExpress{
         })
     }
 
-    _initializeRouter(){
+    _initializeRouter(app){
 
+        NodeAPIRouter.initializeRouter( this.app.get.bind(this.app), this._expressMiddleware, '/', NODE_API_TYPE.NODE_API_TYPE_HTTP );
+        NodeAPIRouter.initializeRouterCallbacks( this.app.get.bind(this.app), this._expressMiddlewareCallback, '/', this.app, NODE_API_TYPE.NODE_API_TYPE_HTTP );
 
-        // respond with "hello world" when a GET request is made to the homepage
-        this.app.get('/', (req, res) => {
-
-            let lastBlock = Blockchain.blockchain.blocks.last;
-
-            res.json({
-
-                protocol: consts.SETTINGS.NODE.PROTOCOL,
-                version: consts.SETTINGS.NODE.VERSION,
-                blocks: {
-                    length: Blockchain.blockchain.blocks.length,
-                    lastBlockHash: lastBlock !== undefined ? Blockchain.blockchain.blocks.last.hash.toString("hex") : '',
-                },
-                networkHashRate: Blockchain.blockchain.blocks.networkHashRate,
-                sockets:{
-                    clients: NodesList.countNodesByConnectionType(CONNECTIONS_TYPE.CONNECTION_CLIENT_SOCKET),
-                    servers: NodesList.countNodesByConnectionType(CONNECTIONS_TYPE.CONNECTION_SERVER_SOCKET),
-                    webpeers: NodesList.countNodesByConnectionType(CONNECTIONS_TYPE.CONNECTION_WEBRTC),
-                },
-                services:{
-                    serverPool: Blockchain.ServerPoolManagement.serverPoolProtocol.loaded,
-                    miningPool: Blockchain.PoolManagement.poolProtocol.loaded,
-                    minerPool: Blockchain.MinerPoolManagement.minerPoolProtocol.loaded,
-                },
-                waitlist:{
-                    list: NodesWaitlist.getJSONList( NODE_TYPE.NODE_TERMINAL, false ),
-                }
-
-            });
-
-        });
-
-        // Return blocks information
-        this.app.get('/blocks/:blocks', (req, res) => {
-
-          try {
-            let block_start = parseInt(decodeURIComponent(req.params.blocks))
-            if (block_start < Blockchain.blockchain.blocks.length) {
-              let blocks_to_send = []
-              for (let i=block_start; i<Blockchain.blockchain.blocks.length; i++) {
-                blocks_to_send.push(Blockchain.blockchain.blocks[i].toJSON())
-              }
-              res.send({result: true, blocks: blocks_to_send})
-              return
-            } else {
-              throw ("block start is not correct: " + block_start)
-            }
-          } catch (exception) {
-            res.send({result: false, message: exception.message});
-            return;
-          }
-        })
-
-
-        // Return block information
-        this.app.get('/block/:block', (req, res) => {
-          try {
-            let block = parseInt(decodeURIComponent(req.params.block))
-            if (block < Blockchain.blockchain.blocks.length) {
-              res.send({result: true, block: Blockchain.blockchain.blocks[block].toJSON()})
-              return
-            } else {
-              throw "Block not found."
-            }
-          } catch (exception) {
-            res.send({result: false, message: "Invalid Block"});
-            return;
-          }
-        })
-
-
-        // Return address info: balance, blocks mined and transactions
-        this.app.get('/address/:address', (req, res) => {
-
-            let address = decodeURIComponent(req.params.address);
-
-            try {
-                address = InterfaceBlockchainAddressHelper.getUnencodedAddressFromWIF(address);
-            } catch (exception){
-                res.send({result: false, message: "Invalid Address"});
-                return;
-            }
-
-            let answer = []
-            let minedBlocks = []
-            let balance = 0
-            let last_block = Blockchain.blockchain.blocks.length
-
-            // Get balance
-            balance = Blockchain.blockchain.accountantTree.getBalance(address, undefined);
-            balance = (balance === null) ? 0 : (balance / WebDollarCoins.WEBD);
-
-            // Get mined blocks and transactions
-            for (let i=0; i<Blockchain.blockchain.blocks.length; i++) {
-
-                for (let j = 0; j < Blockchain.blockchain.blocks[i].data.transactions.transactions.length; j++) {
-
-                    let transaction = Blockchain.blockchain.blocks[i].data.transactions.transactions[j];
-
-                    let found = false;
-                    for (let q = 0; q < transaction.from.addresses.length; q++)
-                        if (transaction.from.addresses[q].unencodedAddress.equals(address)) {
-                            found = true;
-                            break;
-                        }
-
-                    for (let q = 0; q < transaction.to.addresses.length; q++)
-                        if (transaction.to.addresses[q].unencodedAddress.equals(address)) {
-                            found = true;
-                            break;
-                        }
-
-                    if (found) {
-                        answer.push({
-                                blockId: Blockchain.blockchain.blocks[i].height,
-                                timestamp: Blockchain.blockchain.blocks[i].timeStamp + BlockchainGenesis.timeStamp,
-                                transaction: transaction.toJSON()
-                            });
-                    }
-
-                }
-                if (Blockchain.blockchain.blocks[i].data.minerAddress.equals(address)) {
-                    minedBlocks.push(
-                        {
-                            blockId: Blockchain.blockchain.blocks[i].height,
-                            timestamp: Blockchain.blockchain.blocks[i].timeStamp + BlockchainGenesis.timeStamp,
-                            transactions: Blockchain.blockchain.blocks[i].data.transactions.transactions.length
-                        });
-                }
-            }
-
-
-            res.send({result: true, last_block: last_block,
-                      balance: balance, minedBlocks: minedBlocks,
-                      transactions: answer
-                     });
-
-        });
-
-        //Get Address
-        //TODO: optimize or limit the number of requests
-        this.app.get('/wallets/balance/:address', (req, res) => {
-
-            let address = decodeURIComponent(req.params.address);
-            let balance = Blockchain.blockchain.accountantTree.getBalance(address, undefined);
-
-            balance = (balance === null) ? 0 : (balance / WebDollarCoins.WEBD);
-
-            res.json(balance);
-
-        });
-
-        if (process.env.WALLET_SECRET_URL && typeof process.env.WALLET_SECRET_URL === "string" && process.env.WALLET_SECRET_URL.length >= 30) {
-
-            this.app.get('/'+process.env.WALLET_SECRET_URL+'/mining/balance', (req, res) => {
-
-                let addressString = Blockchain.blockchain.mining.minerAddress;
-                let balance = Blockchain.blockchain.accountantTree.getBalance(addressString, undefined);
-
-                balance = (balance === null) ? 0 : (balance / WebDollarCoins.WEBD);
-
-                res.json(balance);
-
-            });
-
-            this.app.get('/'+process.env.WALLET_SECRET_URL+'/wallets/import', async (req, res) => {
-
-                let content = {
-                    version: '0.1',
-                    address: decodeURIComponent(req.query.address),
-                    publicKey: req.query.publicKey,
-                    privateKey: req.query.privateKey
-                };
-
-                try {
-
-                    let answer = await Blockchain.Wallet.importAddressFromJSON(content);
-
-                    if (answer.result === true) {
-                        console.log("Address successfully imported", answer.address);
-                        await Blockchain.Wallet.saveWallet();
-                        res.json(true);
-                    } else {
-                        console.error(answer.message);
-                        res.json(false);
-                    }
-
-                } catch(err) {
-                    console.error(err.message);
-                    res.json(false);
-                }
-
-            });
-
-            this.app.get('/'+process.env.WALLET_SECRET_URL+'/wallets/transactions', async (req, res) => {
-
-              let from = decodeURIComponent(req.query.from);
-              let to = decodeURIComponent(req.query.to);
-              let amount = parseInt(req.query.amount) * WebDollarCoins.WEBD;
-              let fee = parseInt(req.query.fee) * WebDollarCoins.WEBD;
-
-              let result = await Blockchain.Transactions.wizard.createTransactionSimple(from, to, amount, fee);
-
-              res.json(result);
-
-            });
-
-          this.app.get('/'+process.env.WALLET_SECRET_URL+'/wallets/export', async (req, res) => {
-              let addressString = Blockchain.blockchain.mining.minerAddress;
-              let answer = await Blockchain.Wallet.exportAddressToJSON(addressString);
-
-              if (answer.data) {
-                res.json(answer.data);
-              } else {
-                res.json({});
-              }
-          });
-
-        }
-
-        // respond with "hello world" when a GET request is made to the homepage
-        this.app.get('/hello', (req, res) => {
-            res.send('world');
-        });
-
-        // respond with "hello world" when a GET request is made to the homepage
-        this.app.get('/ping', (req, res) => {
-            res.json( { ping: "pong" });
-        });
-
-        this.app.get('/blockHeight/:blockHeight', (req, res) => {
-            let nBlockHeight = parseInt(decodeURIComponent(req.params.blockHeight));
-            let oBlock       = Blockchain.blockchain.blocks[nBlockHeight];
-
-            if (typeof oBlock === "undefined") {
-                res.status(404).json({result: false, message: "Block not found or invalid block number"});
-                return;
-            }
-
-            try {
-                res.json({result: true, block: this._processBlock(oBlock)});
-            }
-            catch (e) {
-                res.status(500).json({result: false, message: e.message});
-            }
-        })
-
-        this.app.get('/blockHeights/:blockHeights', (req, res) => {
-            let aBlockHeights = decodeURIComponent(req.params.blockHeights).split(',');
-
-            // unique heights
-            aBlockHeights = Array.from(new Set(aBlockHeights));
-
-            if (aBlockHeights.length > 50) {
-                res.status(500).json({result: false, message: 'Limit exceeded'});
-                return;
-            }
-
-            let aBlocks = [], nBlockHeight, oBlock, i;
-
-            for (i in aBlockHeights)
-            {
-                nBlockHeight = parseInt(aBlockHeights[i]);
-
-                if (nBlockHeight > Blockchain.blockchain.blocks.length)
-                {
-                    continue;
-                }
-
-                oBlock = Blockchain.blockchain.blocks[nBlockHeight];
-
-                if (typeof oBlock === "undefined") {
-                    continue;
-                }
-
-                try {
-                    aBlocks.push(this._processBlock(oBlock));
-                }
-                catch (e) {
-                    res.status(500).json({result: false, message: e.message});
-                    return;
-                }
-            }
-
-            res.json({result: true, blocks: aBlocks});
-        })
-
-        this.app.get('/blocksStartingWithHeight/:startBlockHeight', (req, res) => {
-            let aBlocks           = [], nBlockHeight, oBlock;
-            let nStartBlockHeight = parseInt(decodeURIComponent(req.params.startBlockHeight));
-            let nEndBlockHeight   = nStartBlockHeight + 50;
-
-            for (nBlockHeight=nStartBlockHeight; nBlockHeight<=nEndBlockHeight; nBlockHeight++)
-            {
-                // break if currentBlockHeight is smaller than our desired height
-                // or if the block cannot be retrieved at the desired height
-                // so we can return consecutive blocks each time (even if the returned number is smaller than 50)
-
-                if (nBlockHeight > Blockchain.blockchain.blocks.length)
-                {
-                    break;
-                }
-
-                oBlock = Blockchain.blockchain.blocks[nBlockHeight];
-
-                if (typeof oBlock === "undefined")
-                {
-                    break;
-                }
-
-                try
-                {
-                    aBlocks.push(this._processBlock(oBlock));
-                }
-                catch (e)
-                {
-                    res.status(500).json({result: false, message: e.message});
-                    return;
-                }
-            }
-
-            res.json({result: true, blocks: aBlocks});
-        })
     }
+
 
     amIFallback(){
 
@@ -479,84 +187,47 @@ class NodeExpress{
 
     }
 
-    _processBlock (oBlock) {
-        let transactions       = [], i;
-        let nBlockTimestampRaw = oBlock.timeStamp;
-        let nBlockTimestamp    = nBlockTimestampRaw + BlockchainGenesis.timeStampOffset;
-        let oBlockTimestampUTC = new Date(nBlockTimestamp * 1000);
+    //this will process the params
+    async _expressMiddleware(req, res, callback){
 
-        for (i=0; i < oBlock.data.transactions.transactions.length; i++)
-        {
-            let oTransaction = oBlock.data.transactions.transactions[i];
-            let nInputSum    = oTransaction.from.calculateInputSum();
-            let nOutputSum   = oTransaction.to.calculateOutputSum();
+        try {
+            for (let k in req.params)
+                req.params[k] = decodeURIComponent(req.params[k]);
 
-            let aTransaction = {
-                trx_id         : oTransaction.txId.toString('hex'),
-                version        : oTransaction.version,
-                nonce          : oTransaction.nonce,
-                time_lock      : oTransaction.timeLock,
-                from_length    : oTransaction.from.addresses.length,
-                to_length      : oTransaction.to.addresses.length,
-                fee            : oTransaction.fee / WebDollarCoins.WEBD,
-                fee_raw        : oTransaction.fee,
-                timestamp      : oBlockTimestampUTC.toUTCString(),
-                timestamp_UTC  : nBlockTimestamp,
-                timestamp_block: nBlockTimestampRaw,
-                timestamp_raw  : Blockchain.blockchain.getTimeStamp(oBlock.height),
-                createdAtUTC   : oBlockTimestampUTC,
-                block_id       : oBlock.height,
-                from           : {trxs: [], addresses: [], amount: nInputSum  / WebDollarCoins.WEBD, amount_raw: nInputSum},
-                to             : {trxs: [], addresses: [], amount: nOutputSum / WebDollarCoins.WEBD, amount_raw: nOutputSum},
-            };
+            let answer = await callback(req.params, res);
+            res.json(answer);
 
-            oTransaction.from.addresses.forEach((oAddress) => {
-                aTransaction.from.trxs.push({
-                    trx_from_address   : BufferExtended.toBase(InterfaceBlockchainAddressHelper.generateAddressWIF(oAddress.unencodedAddress)),
-                    trx_from_pub_key   : oAddress.publicKey.toString("hex"),
-                    trx_from_signature : oAddress.signature.toString("hex"),
-                    trx_from_amount    : oAddress.amount / WebDollarCoins.WEBD,
-                    trx_from_amount_raw: oAddress.amount
-                });
-
-                aTransaction.from.addresses.push(BufferExtended.toBase(InterfaceBlockchainAddressHelper.generateAddressWIF(oAddress.unencodedAddress)));
-            });
-
-            oTransaction.to.addresses.forEach((oAddress) => {
-                aTransaction.to.trxs.push({
-                    trx_to_address   : BufferExtended.toBase(InterfaceBlockchainAddressHelper.generateAddressWIF(oAddress.unencodedAddress)),
-                    trx_to_amount    : oAddress.amount / WebDollarCoins.WEBD,
-                    trx_to_amount_raw: oAddress.amount
-                });
-
-                aTransaction.to.addresses.push(BufferExtended.toBase(InterfaceBlockchainAddressHelper.generateAddressWIF(oAddress.unencodedAddress)));
-            });
-
-            transactions.push(aTransaction);
+        } catch (exception){
+            res.json({result:false, message: exception.message});
         }
 
-        return {
-            id             : oBlock.height,
-            block_id       : oBlock.height,
-            hash           : oBlock.hash.toString('hex'),
-            nonce          : Serialization.deserializeNumber4Bytes_Positive(Serialization.serializeNumber4Bytes(oBlock.nonce)),
-            nonce_raw      : oBlock.nonce,
-            version        : oBlock.version,
-            previous_hash  : oBlock.hashPrev.toString('hex'),
-            timestamp      : oBlockTimestampUTC.toUTCString(),
-            timestamp_UTC  : nBlockTimestamp,
-            timestamp_block: nBlockTimestampRaw,
-            hash_data      : oBlock.data.hashData.toString('hex'),
-            miner_address  : BufferExtended.toBase(InterfaceBlockchainAddressHelper.generateAddressWIF(oBlock.data._minerAddress)),
-            trxs_hash_data : oBlock.data.transactions.hashTransactions.toString('hex'),
-            trxs_number    : oBlock.data.transactions.transactions.length,
-            trxs           : transactions,
-            block_raw      : BufferExtended.toBase(oBlock.serializeBlock().toString('hex')),
-            reward         : oBlock.reward === null ? 0 : oBlock.reward / WebDollarCoins.WEBD,
-            reward_raw     : oBlock.reward === null ? 0 : oBlock.reward,
-            createdAtUTC   : oBlockTimestampUTC
-        };
     }
+
+    async _expressMiddlewareCallback(req, res, callback){
+
+        try {
+            for (let k in req)
+                req[k] = decodeURIComponent(req[k]);
+
+            let url = req.url;
+
+            if (typeof url !== "string") throw {message: "url not specified"};
+
+            let answer = await callback(req, res, (data)=>{ this._notifyHTTPSubscriber(url, data) });
+            res.json(answer);
+
+        } catch (exception){
+            res.json({result:false, message: exception.message});
+        }
+
+    }
+
+    _notifyHTTPSubscriber(url, data){
+
+        //TODO notify via http get/post via axios ?
+
+    }
+
 }
 
 export default new NodeExpress();

@@ -8,7 +8,7 @@ import PoolPayouts from "./Pool-Payouts"
 const LIGHT_SERVER_POOL_VALIDATION_BLOCK_CONFIRMATIONS = 50; //blocks
 const VALIDATION_BLOCK_CONFIRMATIONS = 20; //blocks
 
-const MAXIMUM_FAIL_CONFIRMATIONS = 10; //blocks
+const MAXIMUM_FAIL_CONFIRMATIONS = 20; //blocks
 
 const CONFIRMATIONS_REQUIRED = consts.DEBUG ? 1 : 10;
 
@@ -55,14 +55,12 @@ class PoolRewardsManagement{
         let confirmations = {
         };
 
-        let blocksInfoStart = 0;
-        for (let i = 0; i< this.poolData.blocksInfo.length; i++)
-            if (this.poolData.blocksInfo[i].block !== undefined) {
-                blocksInfoStart = this.poolData.blocksInfo[i].block.height;
-                break;
-            }
+        let firstBlock;
+        for (let i=0; i < this.poolData.blocksInfo.length; i++)
+            if ( this.poolData.blocksInfo[ i ].block !== undefined )
+                if ( firstBlock === undefined || this.poolData.blocksInfo[i].block.height < firstBlock) firstBlock = this.poolData.blocksInfo[ i ].block.height;
 
-        for (let i = this.blockchain.blocks.length-1, n = Math.max( this.blockchain.blocks.blocksStartingPoint, blocksInfoStart ); i>= n; i-- ){
+        for (let i = this.blockchain.blocks.length-1, n = Math.max( this.blockchain.blocks.blocksStartingPoint, firstBlock ); i>= n; i-- ) {
 
             if ( this.blockchain.mining.unencodedMinerAddress.equals( this.blockchain.blocks[i].data.minerAddress ))
                 confirmationsPool++;
@@ -82,24 +80,17 @@ class PoolRewardsManagement{
 
         }
 
-
-        //maybe the last block was not finished
-        let start = this.poolData.blocksInfo.length-1;
-        if ( this.poolData.blocksInfo[start].block === undefined )
-            start --;
-
-
         //recalculate the confirmations
-        for (let i = start ; i >= 0; i--  ){
-
-            let blockInfo = this.poolData.blocksInfo[i].block;
+        for (let i = this.poolData.blocksInfo.length-1; i >= 0; i--  ){
 
             //already confirmed
             if ( this.poolData.blocksInfo[i].payout){
 
                 //let's delete old payouts
-                if (this.poolData.blocksInfo[i].block.height - this.blockchain.blocks.length > 40)
-                    this.poolData.deleteBlockInformationByIndex(i);
+                if ( this.blockchain.blocks.length - this.poolData.blocksInfo[i].block.height > 40) {
+                    this.poolManagement.poolStatistics.poolBlocksConfirmedAndPaid++;
+                    this.poolData.deleteBlockInformation(i);
+                }
 
                 poolBlocksConfirmed++;
                 continue;
@@ -111,6 +102,23 @@ class PoolRewardsManagement{
                 poolBlocksConfirmed++;
                 continue;
             }
+
+            let blockInfo = this.poolData.blocksInfo[i].block;
+
+            if (blockInfo === undefined){
+
+                if (i === this.poolData.blocksInfo.length-1 ) continue;
+                else { //for some reasons, maybe save/load
+                    this.redistributePoolDataBlockInformation(this.poolData.blocksInfo[i], i );
+                    continue;
+                }
+
+            }
+
+
+            //not ready at the moment
+            if (blockInfo.height > this.blockchain.blocks.length)
+                continue;
 
             //confirm using my own blockchain / light blockchain
             if (this.blockchain.blocks.blocksStartingPoint < blockInfo.height){ //i can confirm the block by myself
@@ -160,13 +168,20 @@ class PoolRewardsManagement{
                 this.poolData.blocksInfo[i].confirmed = true;
 
                 //convert reward to confirmedReward
-                for (let j=0; j < this.poolData.blocksInfo[i].blockInformationMinersInstances.length; j++) {
+                this.poolData.blocksInfo[i].blockInformationMinersInstances.forEach((minerInstance)=>{
 
-                    let reward = this.poolData.blocksInfo[i].blockInformationMinersInstances[j].calculateReward();
-                    this.poolData.blocksInfo[i].blockInformationMinersInstances[j].minerInstance.miner.rewardConfirmed += reward;
-                    this.poolData.blocksInfo[i].blockInformationMinersInstances[j].minerInstance.miner.rewardTotal -= reward;
+                    minerInstance.calculateReward(false);
 
-                }
+                    minerInstance.miner.rewardConfirmed += minerInstance.reward;
+                    minerInstance.miner.rewardTotal -= minerInstance.reward;
+
+
+                    if ( minerInstance.miner.referrals.referralLinkMiner !== undefined && this.poolManagement.poolSettings.poolReferralFee > 0) {
+                        minerInstance.miner.referrals.referralLinkMiner.rewardReferralConfirmed += minerInstance.rewardForReferral;
+                        minerInstance.miner.referrals.referralLinkMiner.rewardReferralTotal -= minerInstance.rewardForReferral;
+                    }
+
+                });
 
                 poolBlocksConfirmed++;
 
@@ -174,11 +189,9 @@ class PoolRewardsManagement{
                 poolBlocksUnconfirmed++;
             }
 
-
-
         }
 
-        this.poolManagement.poolStatistics.addBlocksStatistics(poolBlocksConfirmed, poolBlocksUnconfirmed);
+        this.poolManagement.poolStatistics.addBlocksStatistics(poolBlocksConfirmed, poolBlocksUnconfirmed );
 
     }
 
@@ -318,13 +331,11 @@ class PoolRewardsManagement{
             let lastBlockInformationMinerInstance = lastBlockInformation._addBlockInformationMinerInstance( blockInformation.blockInformationMinersInstances[i].minerInstance );
 
             blockInformation.blockInformationMinersInstances[i].cancelReward();
-            lastBlockInformationMinerInstance.adjustDifficulty(blockInformation.blockInformationMinersInstances[i].minerInstanceTotalDifficulty);
-
-
+            lastBlockInformationMinerInstance.adjustDifficulty(blockInformation.blockInformationMinersInstances[i].minerInstanceTotalDifficulty, true);
         }
 
         //clear the blockInformation
-        this.poolData.deleteBlockInformationByIndex(index);
+        this.poolData.deleteBlockInformation(index);
         
     }
 

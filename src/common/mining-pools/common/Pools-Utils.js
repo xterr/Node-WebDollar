@@ -6,6 +6,7 @@ import NODE_CONSENSUS_TYPE from "node/lists/types/Node-Consensus-Type"
 import Utils from "common/utils/helpers/Utils";
 import consts from 'consts/const_global'
 import InterfaceBlockchainAddressHelper from "../../blockchain/interface-blockchain/addresses/Interface-Blockchain-Address-Helper";
+import SocketAddress from "../../sockets/protocol/extend-socket/Socket-Address";
 const sanitizer = require('sanitizer');
 
 class PoolsUtils {
@@ -17,7 +18,7 @@ class PoolsUtils {
     validatePoolName(poolName){
 
         if (typeof poolName !== "string") throw {message: "pool name is not a string"};
-        if (poolName !=='' && ! /^[A-Za-z\d\s]+$/.test(poolName)) throw {message: "pool name is invalid"};
+        if (poolName !=='' && ! /^[_\-A-Za-z\d\s]+$/.test(poolName)) throw {message: "pool name is invalid"};
 
     }
 
@@ -47,7 +48,7 @@ class PoolsUtils {
         if (typeof poolActivated !== "boolean") throw {message: "poolActivated is not a boolean"};
     }
 
-    validatePoolsDetails(poolName, poolFee, poolWebsite, poolAddress, poolPublicKey, poolServers, poolActivated = false){
+    validatePoolsDetails(poolName, poolFee, poolWebsite, poolAddress, poolPublicKey, poolServers, poolActivated = false, poolReferralFee = 0){
 
         this.validatePoolName(poolName);
         this.validatePoolFee(poolFee);
@@ -55,7 +56,10 @@ class PoolsUtils {
         this.validatePoolPublicKey(poolPublicKey);
         this.validatePoolServers(poolServers);
         this.validatePoolActivated(poolActivated);
-        if (InterfaceBlockchainAddressHelper.getUnencodedAddressFromWIF(poolAddress) === null) throw {message: "poolAddress is invalid"};
+        this.validatePoolFee(poolReferralFee);
+
+        if (poolAddress !== undefined)
+            if (InterfaceBlockchainAddressHelper.getUnencodedAddressFromWIF(poolAddress) === null) throw {message: "poolAddress is invalid"};
 
         return true;
     }
@@ -150,32 +154,77 @@ class PoolsUtils {
     }
 
 
+    substr(url){
+        return sanitizer.sanitize( url.substr(0, url.indexOf("/") !== -1 ? url.indexOf("/") : undefined) );
+    }
+
+    substrNext(url){
+        return url.indexOf( "/" ) >= 0 ? url.substr(url.indexOf( "/" )+1) : '';
+    }
+
     extractPoolURL(url){
 
         if ( url === null || url === "" || url === undefined ) return null;
 
         url = sanitizer.sanitize(url);
 
-        let version = sanitizer.sanitize( url.substr(0, url.indexOf( "/" )) );
-        url = url.substr(url.indexOf( "/" )+1);
+        let object = Utils.getLocation(url);
+        if (object !== null)
+            url = object.pathname;
 
-        let poolName = sanitizer.sanitize( url.substr(0, url.indexOf( "/" )) );
-        url = url.substr(url.indexOf( "/" )+1);
+        if (url.indexOf("/pool/") === 0) url = url.replace("/pool/","");
+        if (url.indexOf("pool/") === 0) url = url.replace("pool/","");
 
-        let poolFee = parseFloat( sanitizer.sanitize( url.substr(0, url.indexOf( "/" )) ) );
-        url = url.substr(url.indexOf( "/" )+1);
+        let poolURL = url;
 
-        let poolAddress = sanitizer.sanitize( url.substr(0, url.indexOf( "/" )) );
-        url = url.substr(url.indexOf( "/" )+1);
+        let version = this.substr(url);
+        url = this.substrNext(url);
 
-        let poolPublicKey = sanitizer.sanitize( url.substr(0, url.indexOf( "/" )) );
-        url = url.substr(url.indexOf( "/" )+1);
+        if (version !== "") version = parseInt(version);
+
+        let poolName = this.substr(url) ;
+        poolName = decodeURIComponent(poolName);
+        url = this.substrNext(url);
+
+        let poolFee = parseFloat( this.substr(url) );
+        url = this.substrNext(url);
+
+        let poolAddress;
+
+        if (version === 0) {
+            poolAddress = this.substr(url);
+            poolAddress = poolAddress.replace("%23","#");
+
+            url = this.substrNext(url);
+        }
+
+        let poolPublicKey = this.substr(url);
+        url = this.substrNext(url);
+
         poolPublicKey = new Buffer(poolPublicKey, "hex");
 
-        let poolWebsite = sanitizer.sanitize( url.substr( 0, url.indexOf( "/" )).replace(/\$/g, '/' ));
-        url = url.substr(url.indexOf( "/" )+1);
+        let poolWebsite;
 
-        let poolServers = sanitizer.sanitize( url.replace(/\$/g, '/' ).split(";") );
+        if (version === 0) {
+            poolWebsite = this.substr(url).replace(/\$/g, '/');
+            url = url.substr(url.indexOf("/") + 1);
+        }
+
+        let poolServers = this.substr(url).replace(/\$/g, '/' ).split(";") ;
+        url = this.substrNext(url);
+
+        let poolReferral = '';
+        let ref = this.substr(url);
+        if (ref === "r"){
+
+            url = this.substrNext(url);
+
+            poolReferral  = this.substr(url);
+            poolReferral  = poolReferral.replace("%23","#");
+
+            url = this.substrNext(url);
+        }
+
 
         if (!this.validatePoolsDetails(poolName, poolFee, poolWebsite, poolAddress, poolPublicKey, poolServers)) throw {message: "validate pools "};
 
@@ -187,7 +236,8 @@ class PoolsUtils {
             poolServers: poolServers,
             poolAddress: poolAddress,
             poolPublicKey: poolPublicKey,
-            poolURL: url,
+            poolURL: poolURL,
+            poolReferral: poolReferral,
         };
 
     }
@@ -204,11 +254,12 @@ class PoolsUtils {
 
         for (let i=0; i<poolServers.length; i++) {
 
+            let address = SocketAddress.createSocketAddress(poolServers[i]);
 
             let connected = false, nodeConsensusType;
 
             for (let j=0; j< NodesList.nodes.length; j++ )
-                if (NodesList.nodes[j].socket.node.sckAddress.matchAddress( poolServers[i] )){
+                if (address.matchAddress ( NodesList.nodes[j].socket.node.sckAddress ) || address.matchAddress(NodesList.nodes[j].socket.node.protocol.nodeDomain)){
                     connected = true;
                     nodeConsensusType = NodesList.nodes[j].socket.node.protocol.nodeConsensusType;
                     break;

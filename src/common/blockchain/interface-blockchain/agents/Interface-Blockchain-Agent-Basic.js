@@ -2,11 +2,17 @@ const EventEmitter = require('events');
 import AGENT_STATUS from "./Agent-Status";
 import consts from 'consts/const_global'
 import Blockchain from "main-blockchain/Blockchain"
+import NanoWalletProtocol from "./Nano/Nano-Wallet-Protocol"
+import NodesList from 'node/lists/Nodes-List';
 
 const TIME_TO_RESYNCHRONIZE_IN_CASE_NO_NEW_BLOCKS_WERE_RECEIVED_BROWSER = consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK * 1000 * 4;
 const TIME_TO_RESYNCHRONIZE_IN_CASE_NO_NEW_BLOCKS_WERE_RECEIVED_TERMINAL = consts.BLOCKCHAIN.DIFFICULTY.TIME_PER_BLOCK * 1000 * 8;
 
-class InterfaceBlockchainAgentBasic{
+/**
+ * Agent controls the Synchronization
+ */
+
+class InterfaceBlockchainAgentBasic {
 
     constructor(blockchain){
 
@@ -28,6 +34,20 @@ class InterfaceBlockchainAgentBasic{
 
         this.consensus = true;
 
+
+        NodesList.emitter.on("nodes-list/disconnected", async (result) => {
+
+            if (!this.consensus || consts.DEBUG) return;
+
+            if (NodesList.nodes.length === 0) { //no more sockets, maybe I no longer have internet
+
+                console.warn("################### RESYNCHRONIZATION STARTED ##########");
+                Blockchain.synchronizeBlockchain();
+
+            }
+
+        });
+
     }
 
 
@@ -37,6 +57,10 @@ class InterfaceBlockchainAgentBasic{
     }
 
 
+    /**
+     * Consensus Status - if needs consensus or not
+     * @returns {*}
+     */
     get consensus(){
         return this._consensus;
     }
@@ -44,22 +68,24 @@ class InterfaceBlockchainAgentBasic{
     set consensus(newValue){
 
         this._consensus = newValue;
-        this.initializeConsensus(newValue);
+        this._initializeConsensus(newValue);
 
     }
 
-    initializeConsensus(newConsensus){
+    async _initializeConsensus(newConsensus){
 
         if (newConsensus){
 
+            if (Blockchain.loaded)
+                await this.blockchain.loadBlockchain();
 
             //disconnect if no blocks are received
-            if (this._intervalVerifyConesnsus === undefined){
+            if (this._intervalVerifyConsensus === undefined){
 
                 this._prevBlocks = 0;
                 this._prevDate = 0;
 
-                this._intervalVerifyConesnsus = setInterval( () => {
+                this._intervalVerifyConsensus = setInterval( () => {
 
                     if (this._prevDate !== undefined && this._prevBlocks === this.blockchain.blocks.length ) {
 
@@ -80,7 +106,9 @@ class InterfaceBlockchainAgentBasic{
 
         } else {
 
-            clearInterval(this._intervalVerifyConesnsus);
+            await NanoWalletProtocol.initializeNanoProtocol();
+
+            clearInterval(this._intervalVerifyConsensus);
 
         }
     }

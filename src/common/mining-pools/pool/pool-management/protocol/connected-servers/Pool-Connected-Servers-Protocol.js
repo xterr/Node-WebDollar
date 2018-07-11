@@ -27,6 +27,8 @@ class PoolConnectedServersProtocol extends PoolProtocolList{
 
     async startPoolConnectedServersProtocol(){
 
+        if (!this.poolManagement.poolSettings.poolUsePoolServers) return false;
+
         for (let i=0; i<NodesList.nodes.length; i++)
             await this._subscribePoolConnectedServer(NodesList.nodes[i].socket);
 
@@ -43,7 +45,8 @@ class PoolConnectedServersProtocol extends PoolProtocolList{
 
     async _subscribePoolConnectedServer(socket){
 
-        if (!this.poolManagement._poolStarted) return;
+        if (! this.poolManagement._poolStarted) return;
+        if (!this.poolManagement.poolSettings.poolUsePoolServers) return;
 
         try{
 

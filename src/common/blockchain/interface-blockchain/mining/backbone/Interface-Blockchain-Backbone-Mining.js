@@ -1,4 +1,5 @@
 import InterfaceBlockchainMining from "../Interface-Blockchain-Mining";
+import consts from 'consts/const_global'
 
 class InterfaceBlockchainBackboneMining extends InterfaceBlockchainMining {
 
@@ -9,7 +10,7 @@ class InterfaceBlockchainBackboneMining extends InterfaceBlockchainMining {
 
         super(blockchain, minerAddress, miningFeeThreshold);
 
-        this.WORKER_NONCES_WORK = 200;
+        this.WORKER_NONCES_WORK = 700;
 
         this.block = undefined;
         this.undefined = undefined;
@@ -31,7 +32,7 @@ class InterfaceBlockchainBackboneMining extends InterfaceBlockchainMining {
                     let newAnswer = await this._mineNonces(start + this.WORKER_NONCES_WORK+1, Math.min(this.end, start+this.WORKER_NONCES_WORK+this.WORKER_NONCES_WORK ));
                     resolve(newAnswer);
 
-                }, 5);
+                }, 2);
 
             }));
 
@@ -50,6 +51,9 @@ class InterfaceBlockchainBackboneMining extends InterfaceBlockchainMining {
         this.block = block;
         this.difficulty = difficulty;
         this.end = Math.min(end, 0xFFFFFFFF);
+
+        this.bestHash = consts.BLOCKCHAIN.BLOCKS_MAX_TARGET_BUFFER;
+        this.bestHashNonce = -1;
 
         return await this._mineNonces(start, start + this.WORKER_NONCES_WORK);
 

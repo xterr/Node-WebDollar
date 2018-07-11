@@ -53,21 +53,18 @@ class ServerPoolConnectedMinersProtocol extends  PoolProtocolList{
 
             try {
 
-                if (!Buffer.isBuffer(data.poolPublicKey) || data.poolPublicKey.length < 10) throw { message: "poolPublicKey is not correct" };
+                if (!Buffer.isBuffer(data.pool) || data.pool.length < 10) throw { message: "poolPublicKey is not correct" };
                 if (!Buffer.isBuffer(data.message) || data.message.length !== 32) throw { message: "poolMessage is not correct" };
 
-                if (!Buffer.isBuffer(data.minerPublicKey) || data.minerPublicKey.length !== consts.ADDRESSES.PUBLIC_KEY.LENGTH) throw { message: "poolMessage is not correct" };
+                if (!Buffer.isBuffer(data.miner) || data.miner.length !== consts.ADDRESSES.PUBLIC_KEY.LENGTH) throw { message: "poolMiner is not correct" };
 
                 if ( typeof data.minerAddress !== "string" ) throw { message: "minerAddress is not correct" };
                 let unencodedAddress = InterfaceBlockchainAddressHelper.getUnencodedAddressFromWIF( data.minerAddress );
                 if (unencodedAddress === null) throw { message: "minerAddress is not correct" };
 
-                if ( !Buffer.isBuffer( data.messageSignature ) || data.messageSignature.length < 10) throw {message: "messageSignature is invalid"};
-                if (! ed25519.verify(data.messageSignature, data.message, data.minerPublicKey)) throw {message: "messageSignature doesn't validate message"}
-
                 //find the pool by poolPublicKey
 
-                let socketPool = this.serverPoolManagement.serverPoolProtocol.serverPoolConnectedPoolsProtocol.findPoolByPoolPublicKey(data.poolPublicKey);
+                let socketPool = this.serverPoolManagement.serverPoolProtocol.serverPoolConnectedPoolsProtocol.findPoolByPoolPublicKey(data.pool);
 
                 if (socketPool === null)
                     throw {message: "pool was not found in the serverPool"};
@@ -88,7 +85,7 @@ class ServerPoolConnectedMinersProtocol extends  PoolProtocolList{
                         confirmation.sckAddress = socket.node.sckAddress.address;
                         socketPool.node.sendRequest("mining-pool/hello-pool/answer/"+data.suffix+"/confirmation", confirmation);
 
-                        this._addConnectedMiner(socket, data.poolPublicKey, socketPool);
+                        this._addConnectedMiner(socket, data.pool, socketPool);
                         return true;
                     }
                 } catch (exception){
@@ -109,10 +106,10 @@ class ServerPoolConnectedMinersProtocol extends  PoolProtocolList{
 
             try {
 
-                if (!Buffer.isBuffer(data.minerPublicKey) || data.minerPublicKey.length !== consts.ADDRESSES.PUBLIC_KEY.LENGTH) throw {message: "minerPublicKey is invalid"};
-                if (!Buffer.isBuffer(data.poolPublicKey) || data.poolPublicKey.length !== consts.ADDRESSES.PUBLIC_KEY.LENGTH) throw {message: "poolPublicKey is invalid"};
+                if (!Buffer.isBuffer(data.miner) || data.miner.length !== consts.ADDRESSES.PUBLIC_KEY.LENGTH) throw {message: "minerPublicKey is invalid"};
+                if (!Buffer.isBuffer(data.pool) || data.pool.length !== consts.ADDRESSES.PUBLIC_KEY.LENGTH) throw {message: "poolPublicKey is invalid"};
 
-                let socketPool = this.serverPoolManagement.serverPoolProtocol.serverPoolConnectedPoolsProtocol.findPoolByPoolPublicKey(data.poolPublicKey);
+                let socketPool = this.serverPoolManagement.serverPoolProtocol.serverPoolConnectedPoolsProtocol.findPoolByPoolPublicKey(data.pool);
 
                 if (socketPool === null)
                     throw {message: "pool was not found in the serverPool"};
@@ -134,10 +131,10 @@ class ServerPoolConnectedMinersProtocol extends  PoolProtocolList{
 
             try {
 
-                if ( !Buffer.isBuffer(data.minerPublicKey) || data.minerPublicKey.length !== consts.ADDRESSES.PUBLIC_KEY.LENGTH) throw {message: "minerPublicKey is invalid"};
-                if ( !Buffer.isBuffer(data.poolPublicKey)  || data.poolPublicKey.length !== consts.ADDRESSES.PUBLIC_KEY.LENGTH) throw {message: "poolPublicKey is invalid"};
+                if ( !Buffer.isBuffer(data.miner) || data.miner.length !== consts.ADDRESSES.PUBLIC_KEY.LENGTH) throw {message: "minerPublicKey is invalid"};
+                if ( !Buffer.isBuffer(data.pool)  || data.pool.length !== consts.ADDRESSES.PUBLIC_KEY.LENGTH) throw {message: "poolPublicKey is invalid"};
 
-                let socketPool = this.serverPoolManagement.serverPoolProtocol.serverPoolConnectedPoolsProtocol.findPoolByPoolPublicKey(data.poolPublicKey);
+                let socketPool = this.serverPoolManagement.serverPoolProtocol.serverPoolConnectedPoolsProtocol.findPoolByPoolPublicKey(data.pool);
 
                 if (socketPool === null)
                     throw {message: "pool was not found in the serverPool"};

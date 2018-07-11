@@ -30,6 +30,8 @@ class InterfaceBlockchainMiningBasic {
         this._intervalMiningOutput = undefined;
 
         this.useResetConsensus = true;
+
+        this.resetForced = false;
     }
 
     get minerAddress(){
@@ -108,7 +110,7 @@ class InterfaceBlockchainMiningBasic {
                 return true;
             }
 
-            if ( Wallet.getAddressIndex( minerAddress ) === -1 ){
+            if ( Wallet.getAddress( minerAddress ) === null ){
                 if (typeof window === "undefined"){
 
                     console.error("You are mining on an address that is not in your wallet. Do you want to change the mining address on your wallet?")
@@ -195,6 +197,7 @@ class InterfaceBlockchainMiningBasic {
 
             clearInterval(this._intervalMiningOutput);
             this._intervalMiningOutput = undefined;
+
             this._hashesPerSecond = 0;
 
         }

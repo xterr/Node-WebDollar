@@ -2,6 +2,7 @@ import NodesList from 'node/lists/Nodes-List';
 import consts from 'consts/const_global'
 import global from 'consts/global';
 import Blockchain from "main-blockchain/Blockchain";
+import AdvancedMessages from "node/menu/Advanced-Messages"
 
 let InheritedPoolMining;
 
@@ -38,9 +39,33 @@ class MinerPoolMining extends InheritedPoolMining {
                 this._miningWork.poolSocket = null;
         });
 
-        this.minerAddress = Blockchain.blockchain.mining.minerAddress;
+        this._minerAddress = Blockchain.blockchain.mining.minerAddress;
 
-        setTimeout( this._checkForWork.bind(this), 5000);
+        this._isBeingMining = false;
+
+        setTimeout( this._checkForWorkInterval.bind(this), 5000);
+
+    }
+
+    async _setAddress(newAddress, save, skipChangingAddress=false ){
+
+        if (this._minerAddress === newAddress)
+            return;
+
+        let oldMinerAddress = this._minerAddress;
+        await InheritedPoolMining.prototype._setAddress.call( this, newAddress, true );
+
+        if (skipChangingAddress) return;
+
+        if ( Blockchain.Wallet.getAddress( this._minerAddress )  === null ){
+
+            //the address is not right, let's ask if he wants to change the mining address
+            if (await AdvancedMessages.confirm("You are mining on a different address in this pool. Do you want to change the pool mining address"))
+                await this.minerPoolManagement.minerPoolProtocol.changeWalletMining();
+
+        } else
+            await this.minerPoolManagement.minerPoolProtocol.changeWalletMining(undefined, this._minerAddress, oldMinerAddress);
+
 
     }
 
@@ -52,6 +77,7 @@ class MinerPoolMining extends InheritedPoolMining {
         this._miningWork.difficultyTarget = work.t;
         this._miningWork.serializedHeader = work.s;
 
+        Blockchain.blockchain.blocks.length = work.h;
 
         this._miningWork.start = work.start;
         this._miningWork.end = work.end;
@@ -60,7 +86,12 @@ class MinerPoolMining extends InheritedPoolMining {
 
         this._miningWork.poolSocket = poolSocket;
 
+        if (this._isBeingMining){
+            this.resetForced = true;
+        }
+
     }
+
 
     async mineNextBlock(showMiningOutput, suspend){
 
@@ -70,19 +101,25 @@ class MinerPoolMining extends InheritedPoolMining {
                 this.setMiningHashRateInterval();
 
             if (this._miningWork.block === undefined || this._miningWork.resolved)
-                await Blockchain.blockchain.sleep(10);
+                await Blockchain.blockchain.sleep(5);
             else {
 
                 try {
 
                     let timeInitial = new Date().getTime();
+
+                    this._isBeingMining = true;
                     let answer = await this._run();
+                    this._isBeingMining = false;
 
                     answer.timeDiff = new Date().getTime() - timeInitial;
 
-                    this._miningWork.resolved = true;
-
-                    let answerPool = await this.minerPoolManagement.minerPoolProtocol.pushWork(this._miningWork.poolSocket, answer);
+                    if (!this.resetForced ) {
+                        this._miningWork.resolved = true;
+                        await this.minerPoolManagement.minerPoolProtocol.pushWork( answer, this._miningWork.poolSocket);
+                    } else {
+                        this.resetForced = false;
+                    }
 
                 } catch (exception) {
                     console.log("Pool Mining Exception", exception);
@@ -116,7 +153,8 @@ class MinerPoolMining extends InheritedPoolMining {
 
     }
 
-    async _checkForWork(){
+
+    async _checkForWorkInterval(){
 
         try {
 
@@ -128,7 +166,7 @@ class MinerPoolMining extends InheritedPoolMining {
         }
 
 
-        setTimeout( this._checkForWork.bind(this), 5000);
+        setTimeout( this._checkForWorkInterval.bind(this), 5000);
     }
 
 }
