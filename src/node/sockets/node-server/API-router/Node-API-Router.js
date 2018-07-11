@@ -1,6 +1,7 @@
 import NodeAPIPublic from "../API/Node-API-Public";
 import NodeAPIPrivate from "../API/Node-API-Private";
 import NodeAPICallbacks from "../API/callbacks/Node-API-Callbacks"
+import NodeAPICustom from "../API/Node-API-Custom"
 
 class NodeAPIRouter{
 
@@ -39,7 +40,9 @@ class NodeAPIRouter{
         app(prefix+'ping', (req, res) => middleWare(req, res, NodeAPIPublic.ping));
 
 
-        
+        app(prefix+'blockHeight/:blockHeight', (req, res) => middleWare(req, res, NodeAPICustom.blockHeight.bind(NodeAPICustom)))
+        app(prefix+'blockHeights/:blockHeights', (req, res) => middleWare(req, res, NodeAPICustom.blockHeights.bind(NodeAPICustom)))
+        app(prefix+'blocksStartingWithHeight/:startBlockHeight', (req, res) => middleWare(req, res, NodeAPICustom.blockStartingWithHeight.bind(NodeAPICustom)))
     }
 
     initializeRouterCallbacks(app, middleWare, prefix='', nodeApiType){
@@ -50,7 +53,7 @@ class NodeAPIRouter{
 
     }
 
-    
+
 }
 
 export default new NodeAPIRouter();
