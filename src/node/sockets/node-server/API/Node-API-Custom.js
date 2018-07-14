@@ -30,7 +30,7 @@ class NodeAPICustom{
         // unique heights
         aBlockHeights = Array.from(new Set(aBlockHeights));
 
-        if (aBlockHeights.length > 50)
+        if (aBlockHeights.length > 100)
         {
             throw 'Limit exceeded';
         }
@@ -61,7 +61,7 @@ class NodeAPICustom{
     blockStartingWithHeight(req, res) {
         let aBlocks           = [], nBlockHeight, oBlock;
         let nStartBlockHeight = parseInt(req.startBlockHeight);
-        let nEndBlockHeight   = nStartBlockHeight + 50;
+        let nEndBlockHeight   = nStartBlockHeight + 100;
 
         for (nBlockHeight=nStartBlockHeight; nBlockHeight<=nEndBlockHeight; nBlockHeight++)
         {
