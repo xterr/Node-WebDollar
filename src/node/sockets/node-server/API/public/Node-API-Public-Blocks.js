@@ -42,6 +42,9 @@ class NodeAPIPublicBlocks{
 
     }
 
+    getBlockByNumber(req, res) {
+        let blockNumber = req.block
+    }
 
 }
 

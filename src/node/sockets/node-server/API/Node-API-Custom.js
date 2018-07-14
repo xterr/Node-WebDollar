@@ -4,6 +4,7 @@ import WebDollarCoins from "common/utils/coins/WebDollar-Coins"
 import InterfaceBlockchainAddressHelper from 'common/blockchain/interface-blockchain/addresses/Interface-Blockchain-Address-Helper'
 import BufferExtended from "common/utils/BufferExtended";
 import Serialization from "common/utils/Serialization";
+import consts from 'consts/const_global';
 
 class NodeAPICustom{
 
@@ -110,7 +111,7 @@ class NodeAPICustom{
                 timestamp      : oBlockTimestampUTC.toUTCString(),
                 timestamp_UTC  : nBlockTimestamp,
                 timestamp_block: nBlockTimestampRaw,
-                timestamp_raw  : Blockchain.blockchain.getTimeStamp(oBlock.height),
+                timestamp_raw  : nBlockTimestampRaw,
                 createdAtUTC   : oBlockTimestampUTC,
                 block_id       : oBlock.height,
                 from           : {trxs: [], addresses: [], amount: nInputSum  / WebDollarCoins.WEBD, amount_raw: nInputSum},
@@ -142,7 +143,7 @@ class NodeAPICustom{
             transactions.push(aTransaction);
         }
 
-        return {
+        let $oBlockData = {
             id             : oBlock.height,
             block_id       : oBlock.height,
             hash           : oBlock.hash.toString('hex'),
@@ -156,13 +157,88 @@ class NodeAPICustom{
             hash_data      : oBlock.data.hashData.toString('hex'),
             miner_address  : BufferExtended.toBase(InterfaceBlockchainAddressHelper.generateAddressWIF(oBlock.data._minerAddress)),
             trxs_hash_data : oBlock.data.transactions.hashTransactions.toString('hex'),
-            trxs_number    : oBlock.data.transactions.transactions.length,
+            trxs_number    : transactions.length,
             trxs           : transactions,
             block_raw      : BufferExtended.toBase(oBlock.serializeBlock().toString('hex')),
             reward         : oBlock.reward === null ? 0 : oBlock.reward / WebDollarCoins.WEBD,
             reward_raw     : oBlock.reward === null ? 0 : oBlock.reward,
             createdAtUTC   : oBlockTimestampUTC
         };
+
+        return this._processBlockDataForForks($oBlockData, oBlock);
+    }
+
+    _processBlockDataForForks($oBlockData, $oBlock) {
+        let $oForkInfo = consts.HARD_FORKS.DATA[$oBlock.height];
+
+        if (typeof $oForkInfo === 'undefined')
+        {
+            return $oBlockData;
+        }
+
+        if ($oBlock.height === consts.BLOCKCHAIN.HARD_FORKS.WALLET_RECOVERY)
+        {
+            let $aAddressBalanceReduction = consts.HARD_FORKS.DATA[$oBlock.height].ADDRESS_BALANCE_REDUCTION;
+            let nInputSum                 = 0;
+            let nOutputSum                = consts.HARD_FORKS.DATA[$oBlock.height].GENESIS_ADDRESSES_CORRECTION.TO.BALANCE;
+
+            let aTransaction = {
+                trx_id         : 'virtual_tx_' + consts.BLOCKCHAIN.HARD_FORKS.WALLET_RECOVERY + '_1',
+                isVirtual      : true,
+                version        : 1,
+                nonce          : 1,
+                time_lock      : consts.BLOCKCHAIN.HARD_FORKS.WALLET_RECOVERY - 1,
+                from_length    : 0,
+                to_length      : 0,
+                fee            : 0,
+                fee_raw        : 0,
+                timestamp      : $oBlockData['timestamp'],
+                timestamp_UTC  : $oBlockData['timestamp_UTC'],
+                timestamp_block: $oBlockData['timestamp_block'],
+                timestamp_raw  : $oBlockData['timestamp_block'],
+                createdAtUTC   : $oBlockData['createdAtUTC'],
+                block_id       : $oBlock.height,
+                from           : {trxs: [], addresses: [], amount: 0, amount_raw: 0},
+                to             : {trxs: [], addresses: [], amount: nOutputSum / WebDollarCoins.WEBD, amount_raw: nOutputSum},
+            };
+
+            let i = 0;
+            for (let sAddress in $aAddressBalanceReduction)
+            {
+                aTransaction.from.trxs.push({
+                    trx_from_address   : sAddress,
+                    trx_from_pub_key   : 'pubKey_virtual_tx_' + consts.BLOCKCHAIN.HARD_FORKS.WALLET_RECOVERY + '_1' + '_' + i,
+                    trx_from_signature : 'signature_virtual_tx_' + consts.BLOCKCHAIN.HARD_FORKS.WALLET_RECOVERY + '_1' + '_' + i,
+                    trx_from_amount    : - $aAddressBalanceReduction[sAddress] / WebDollarCoins.WEBD,
+                    trx_from_amount_raw: - $aAddressBalanceReduction[sAddress]
+                });
+
+                aTransaction.from.addresses.push(sAddress);
+
+                nInputSum += - $aAddressBalanceReduction[sAddress];
+
+                ++i;
+            }
+
+            aTransaction.from_length = aTransaction.from.addresses.length;
+
+            aTransaction.to.trxs.push({
+                trx_to_address   : consts.HARD_FORKS.DATA[$oBlock.height].GENESIS_ADDRESSES_CORRECTION.TO.ADDRESS,
+                trx_to_amount    : consts.HARD_FORKS.DATA[$oBlock.height].GENESIS_ADDRESSES_CORRECTION.TO.BALANCE / WebDollarCoins.WEBD,
+                trx_to_amount_raw: consts.HARD_FORKS.DATA[$oBlock.height].GENESIS_ADDRESSES_CORRECTION.TO.BALANCE
+            });
+
+            aTransaction.to.addresses.push(consts.HARD_FORKS.DATA[$oBlock.height].GENESIS_ADDRESSES_CORRECTION.TO.ADDRESS);
+            aTransaction.to_length = aTransaction.to.addresses.length;
+
+            aTransaction.from.amount     = nInputSum / WebDollarCoins.WEBD;
+            aTransaction.from.amount_raw = nInputSum;
+
+            $oBlockData.trxs_number = 1;
+            $oBlockData.trxs.push(aTransaction);
+        }
+
+        return $oBlockData;
     }
 }
 
