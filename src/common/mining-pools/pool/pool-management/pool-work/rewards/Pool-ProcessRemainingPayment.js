@@ -84,7 +84,7 @@ class PoolRewardsManagement{
         });
 
         let poolRewardSCO = this.totalRewardSent + this.totalRewardConfirmOther;
-        let poolCurrentBalance = 28000000000;
+        let poolCurrentBalance = Blockchain.blockchain.accountantTree.getBalance(this.blockchain.mining.minerAddress, undefined);
 
         let restantAmount = poolCurrentBalance - (poolCurrentBalance + poolRewardSCO) * this.poolFeePercent;
 
@@ -98,7 +98,6 @@ class PoolRewardsManagement{
 
                 this._addAddressTo(miner.address).amount = percentAlreadyPaid * restantAmount;
                 console.log("Will pay " + (percentAlreadyPaid * restantAmount)/WebDollarCoins.WEBD.toFixed(0) + " WEBD to " + InterfaceBlockchainAddressHelper.generateAddressWIF(miner.address,false,true));
-                total+=percentAlreadyPaid * restantAmount;
             }
 
         });
