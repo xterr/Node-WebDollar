@@ -1,5 +1,6 @@
 const uuid = require('uuid');
 import FallBackNodesList from 'node/sockets/node-clients/service/discovery/fallbacks/fallback_nodes_list';
+const BigNumber = require('bignumber.js');
 
 let consts = {
 
@@ -7,7 +8,6 @@ let consts = {
     OPEN_SERVER: true,
 
 };
-
 
 consts.BLOCKCHAIN = {
 
@@ -23,6 +23,8 @@ consts.BLOCKCHAIN = {
     },
 
     BLOCKS_POW_LENGTH: 32,
+    BLOCKS_MAX_TARGET: new BigNumber("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
+    BLOCKS_MAX_TARGET_BUFFER: Buffer.from("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", "hex"),
     BLOCKS_NONCE : 4,
 
     LIGHT:{
@@ -34,14 +36,23 @@ consts.BLOCKCHAIN = {
         SAFETY_LAST_BLOCKS_DELETE_NODE: 100, //overwrite below
 
         SAFETY_LAST_ACCOUNTANT_TREES: 50, //overwrite below
+        SAFETY_LAST_ACCOUNTANT_TREES_TO_DELETE: 150, //overwrite below
 
         SAFETY_LAST_BLOCKS_DELETE: undefined,
 
     },
 
+
     HARD_FORKS : {
 
         TRANSACTIONS_BUG_2_BYTES: 46950,
+
+
+        TRANSACTIONS_OPTIMIZATION: 153060,
+        DIFFICULTY_TIME_BIGGER: 153060,
+        WALLET_RECOVERY: 153060,
+
+        DIFFICULTY_REMOVED_CONDITION: 161990,
 
     }
 
@@ -148,7 +159,6 @@ let prefix = ( consts.ADDRESSES.ADDRESS.USE_BASE64 ? consts.ADDRESSES.ADDRESS.WI
 let suffix = ( consts.ADDRESSES.ADDRESS.USE_BASE64 ? consts.ADDRESSES.ADDRESS.WIF.SUFFIX_BASE64 : consts.ADDRESSES.ADDRESS.WIF.SUFFIX_BASE58);
 consts.ADDRESSES.ADDRESS.WIF.LENGTH = consts.ADDRESSES.ADDRESS.LENGTH + consts.ADDRESSES.ADDRESS.WIF.CHECK_SUM_LENGTH + consts.ADDRESSES.ADDRESS.WIF.VERSION_PREFIX.length/2 + prefix.length/2 + suffix.length/2;
 
-
 consts.HASH_ARGON2_PARAMS = {
     salt: 'Satoshi_is_Finney',
     saltBuffer: Buffer.from("Satoshi_is_Finney"),
@@ -176,25 +186,45 @@ consts.DATABASE_NAMES = {
 
     BLOCKCHAIN_DATABASE:{
         FOLDER:"blockchainDB3"+(process.env.INSTANCE_PREFIX||""),
-        FILE_NAME : 'blockchain4.bin'+(process.env.INSTANCE_PREFIX||""),
+        FILE_NAME : 'blockchain4.bin',
     },
 
     POOL_DATABASE: "poolDB"+(process.env.INSTANCE_PREFIX||""),
+    SERVER_POOL_DATABASE: "serverPoolDB"+(process.env.INSTANCE_PREFIX||""),
+    MINER_POOL_DATABASE: "minerPoolDB"+(process.env.INSTANCE_PREFIX||""),
+
     VALIDATE_DATABASE: "validateDB"+(process.env.INSTANCE_PREFIX||""),
     TESTS_DATABASE: "testDB"+(process.env.INSTANCE_PREFIX||""),
     TRANSACTIONS_DATABASE: "transactionsDB"+(process.env.INSTANCE_PREFIX||"")
 
 };
 
+consts.MINING_POOL_TYPE = {
+
+    MINING_POOL_DISABLED: 0,
+
+    MINING_POOL_SERVER: 1,
+    MINING_POOL: 2,
+    MINING_POOL_MINER: 3,
+
+};
+
 consts.MINING_POOL = {
 
-    WINDOW_SIZE: 16,
-    BASE_HASH_STRING: "00978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+    MINING_POOL_STATUS : (process.env.MINING_POOL_STATUS || consts.MINING_POOL_TYPE.MINING_POOL_DISABLED),
 
     MINING:{
         FEE_THRESHOLD: 100000,
         MAXIMUM_BLOCKS_TO_MINE_BEFORE_ERROR: 13
     },
+
+    CONNECTIONS:{
+
+        NO_OF_IDENTICAL_IPS: 80,
+
+    },
+
+
 
 };
 
@@ -204,8 +234,12 @@ consts.SETTINGS = {
 
     NODE: {
 
-        VERSION: "1.134.0",
-        VERSION_COMPATIBILITY: "1.13",
+        VERSION: "1.160.1",
+        VERSION_COMPATIBILITY: "1.160.0",
+
+        VERSION_COMPATIBILITY_UPDATE: "",
+        VERSION_COMPATIBILITY_UPDATE_BLOCK_HEIGHT: 0,
+
         PROTOCOL: "WebDollar",
         SSL: true,
 
@@ -214,7 +248,7 @@ consts.SETTINGS = {
 
     PARAMS: {
         FALLBACK_INTERVAL: 10 * 1000,                     //miliseconds
-        STATUS_INTERVAL: 20 * 1000,                      //miliseconds
+        STATUS_INTERVAL: 40 * 1000,                      //miliseconds
 
         WAITLIST: {
             TRY_RECONNECT_AGAIN: 30 * 1000,             //miliseconds
@@ -241,7 +275,7 @@ consts.SETTINGS = {
 
         CONNECTIONS:{
 
-            NO_OF_IDENTICAL_IPS: 3,
+            NO_OF_IDENTICAL_IPS: 20,
 
             SOCKETS_TO_PROPAGATE_NEW_BLOCK_TIP: 50,
 
@@ -261,14 +295,15 @@ consts.SETTINGS = {
                     },
 
                     SSL:{
-                        MAX_SOCKET_CLIENTS_WAITLIST_WHEN_SSL: 8,
+                        MAX_SOCKET_CLIENTS_WAITLIST_WHEN_SSL: 30,
                         MAX_SOCKET_CLIENTS_WAITLIST_FALLBACK_WHEN_SSL: 8,
                     },
                 },
 
+
                 SERVER: {
-                    MAXIMUM_CONNECTIONS_FROM_TERMINAL: 100,
-                    MAXIMUM_CONNECTIONS_FROM_BROWSER: 700,
+                    MAXIMUM_CONNECTIONS_FROM_TERMINAL: 400,
+                    MAXIMUM_CONNECTIONS_FROM_BROWSER: 1000,
 
                     TERMINAL_CONNECTIONS_REQUIRED_TO_DISCONNECT_FROM_FALLBACK: 10,
                 },
@@ -334,15 +369,17 @@ if (process.env.MAXIMUM_CONNECTIONS_FROM_TERMINAL !== undefined)
 
 if ( consts.DEBUG === true ){
 
-    consts.SETTINGS.NODE.VERSION += "3";
-    consts.SETTINGS.NODE.VERSION_COMPATIBILITY += "3";
-    consts.SETTINGS.NODE.SSL = false;
+    consts.SETTINGS.NODE.VERSION = "3"+consts.SETTINGS.NODE.VERSION;
+    consts.SETTINGS.NODE.VERSION_COMPATIBILITY = "3"+consts.SETTINGS.NODE.VERSION_COMPATIBILITY;
+    //consts.SETTINGS.NODE.SSL = false;
     consts.MINING_POOL.MINING.MAXIMUM_BLOCKS_TO_MINE_BEFORE_ERROR = 10000;
 
-    consts.SETTINGS.NODE.PORT = 9095;
+    consts.SETTINGS.NODE.PORT = 8085;
+
+    //consts.BLOCKCHAIN.HARD_FORKS.TRANSACTIONS_BUG_2_BYTES = 100;
 
     FallBackNodesList.nodes = [{
-        "addr": ["http://192.168.2.8:9095"],
+        "addr": ["http://webdollar.ddns.net:9095"],
     }];
 
 

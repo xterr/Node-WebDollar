@@ -2,13 +2,14 @@ import NodesList from 'node/lists/Nodes-List'
 import InterfaceBlockchainProtocol from "./../protocol/Interface-Blockchain-Protocol"
 import InterfaceBlockchainFork from 'common/blockchain/interface-blockchain/blockchain/forks/Interface-Blockchain-Fork'
 import VersionCheckerHelper from "common/utils/helpers/Version-Checker-Helper"
-import CONNECTION_TYPE from "node/lists/types/Connections-Type";
+import CONNECTION_TYPE from "node/lists/types/Connection-Type";
 import Blockchain from "main-blockchain/Blockchain"
 import AGENT_STATUS from "./Agent-Status";
 import consts from 'consts/const_global'
 import InterfaceBlockchainAgentBasic from "./Interface-Blockchain-Agent-Basic"
-import NODES_TYPE from "node/lists/types/Nodes-Type";
+import NODE_TYPE from "node/lists/types/Node-Type";
 import NodesWaitlistConnecting from 'node/lists/waitlist/Nodes-Waitlist-Connecting'
+import Log from 'common/utils/logging/Log';
 
 let NodeExpress;
 
@@ -76,23 +77,12 @@ class InterfaceBlockchainAgent extends InterfaceBlockchainAgentBasic{
 
         this._initializeProtocol();
 
-        NodesList.emitter.on("nodes-list/disconnected", async (result) => {
 
-            if (NodesList.nodes.length === 0) { //no more sockets, maybe I no longer have internet
-
-                console.warn("################### RESYNCHRONIZATION STARTED ##########");
-                Blockchain.synchronizeBlockchain();
-
-            }
-
-        });
-
-
-        if (!this.light)
+        if (!this.light )
             NodesList.emitter.on("nodes-list/connected", async (result) => {
 
-                if (!NodeExpress.amIFallback() )
-                    if ( NodesList.countNodesByType(NODES_TYPE.NODE_TERMINAL) > consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.TERMINAL_CONNECTIONS_REQUIRED_TO_DISCONNECT_FROM_FALLBACK){
+                if (!NodeExpress.SSL && !NodeExpress.amIFallback() && !Blockchain.isPoolActivated )
+                    if ( NodesList.countNodesByType(NODE_TYPE.NODE_TERMINAL) > consts.SETTINGS.PARAMS.CONNECTIONS.TERMINAL.SERVER.TERMINAL_CONNECTIONS_REQUIRED_TO_DISCONNECT_FROM_FALLBACK){
 
                         this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_SLAVES;
                         NodesList.disconnectFromFallbacks();
@@ -124,21 +114,32 @@ class InterfaceBlockchainAgent extends InterfaceBlockchainAgentBasic{
         else { //terminal
 
             //let's check if we downloaded blocks in the last 2 minutes
+
             let set = true;
 
             if (this.lastTimeChecked !== undefined ){
 
-                if ( new Date().getTime() -  this.lastTimeChecked.date > 4*60*1000 ){
+                let diffBlocks = this.blockchain.blocks.length - this.lastTimeChecked.blocks;
+                let shouldItStart = false;
+                if (  NodesList.nodes.length > 0 && diffBlocks >= 0 && diffBlocks < consts.SETTINGS.PARAMS.CONNECTIONS.FORKS.MAXIMUM_BLOCKS_TO_DOWNLOAD &&
+                    NodesList.nodes.length >= NodesWaitlistConnecting.connectingMaximum.minimum_fallbacks + NodesWaitlistConnecting.connectingMaximum.minimum_waitlist) {
+                    shouldItStart = true;
+                }
 
-                    let diffBlocks = this.blockchain.blocks.length - this.lastTimeChecked.blocks;
+                let difference = Math.max(0, Math.floor( ( 1*60*1000 - (new Date().getTime() -  this.lastTimeChecked.date ))/1000 ));
 
-                    if (  NodesList.nodes.length > 0 && diffBlocks >= 0 && diffBlocks < consts.SETTINGS.PARAMS.CONNECTIONS.FORKS.MAXIMUM_BLOCKS_TO_DOWNLOAD &&
-                          NodesList.nodes.length >= NodesWaitlistConnecting.connectingMaximum.minimum_fallbacks + NodesWaitlistConnecting.connectingMaximum.minimum_waitlist) {
+                if (Math.random() < 0.1){
 
+                    Log.warn("", Log.LOG_TYPE.BLOCKCHAIN);
+                    Log.warn(shouldItStart ? ("Synchronization probably starts in: " + difference + ' seconds ') : 'Synchronizing', Log.LOG_TYPE.BLOCKCHAIN);
+                    Log.warn("", Log.LOG_TYPE.BLOCKCHAIN);
+
+                }
+
+                if ( difference <= 0) {
+
+                    if (shouldItStart)
                         this.status = AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED;
-
-                    }
-
 
                 } else set = false;
 
@@ -196,6 +197,9 @@ class InterfaceBlockchainAgent extends InterfaceBlockchainAgentBasic{
 
     set status(newValue){
 
+        if (this._status === newValue)
+            return;
+
         this._status = newValue;
 
         if ( [AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED, AGENT_STATUS.AGENT_STATUS_NOT_SYNCHRONIZED, AGENT_STATUS.AGENT_STATUS_SYNCHRONIZED_SLAVES].indexOf(newValue) >= 0){
@@ -228,6 +232,8 @@ class InterfaceBlockchainAgent extends InterfaceBlockchainAgentBasic{
     get status(){
         return this._status;
     }
+
+
 
 
 }

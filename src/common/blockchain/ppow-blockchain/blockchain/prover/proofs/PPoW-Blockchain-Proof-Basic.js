@@ -4,6 +4,19 @@ import consts from 'consts/const_global'
 
 class PPoWBlockchainProofBasic{
 
+    constructor(blockchain, blocks){
+
+        this.date = new Date();
+
+        this.blockchain = blockchain;
+
+        this.blocks = blocks;
+        this.blocksIndex = {};
+
+        this.hash = undefined;
+
+    }
+
     destroyProof(){
 
         if (!this.blockchain.agent.light) {
@@ -27,7 +40,7 @@ class PPoWBlockchainProofBasic{
             if (!found) {
 
                 // avoid destroying real blocks
-                if (typeof this.blocks[i].destroyBlock === "function")
+                if (this.blocks[i] !== undefined && typeof this.blocks[i].destroyBlock === "function")
                     this.blocks[i].destroyBlock();
 
             }
@@ -40,22 +53,26 @@ class PPoWBlockchainProofBasic{
 
     }
 
-    constructor(blockchain, blocks){
 
-        this.date = new Date();
-
-        this.blockchain = blockchain;
-        this.blocks = blocks;
-
-        this.hash = undefined;
-
-    }
 
     getProofHeaders(starting, length){
 
         let list = [];
-        for (let i=starting; i<Math.min( starting+length, this.blocks.length); i++)
-            list.push( this.blocks[i].getBlockHeader() )
+        for (let i=starting; i<Math.min( starting+length, this.blocks.length); i++) {
+
+            try {
+                list.push(this.blocks[i].getBlockHeader())
+            } catch (exception){
+
+                console.error("Failed to retrieve block " , i, exception );
+                try {
+                    console.error("Failed to retrieve block ", this.blocks[i] !== null ? this.blocks[i].toJSON() : 'block is null');
+                } catch (exception){
+
+                }
+
+            }
+        }
 
         return list
     }
@@ -144,6 +161,17 @@ class PPoWBlockchainProofBasic{
             }
 
         return null;
+    }
+
+
+    push(block){
+
+        if (this.blocksIndex[block.height] === block)
+            return;
+
+        this.blocks.push(block);
+        this.blocksIndex[block.height] = block;
+
     }
 
 }

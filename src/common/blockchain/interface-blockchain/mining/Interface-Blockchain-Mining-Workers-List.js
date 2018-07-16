@@ -1,4 +1,5 @@
 import StatusEvents from "common/events/Status-Events";
+import Blockchain from 'main-blockchain/Blockchain';
 
 class InterfaceBlockchainMiningWorkersList {
 
@@ -29,9 +30,12 @@ class InterfaceBlockchainMiningWorkersList {
         let time = new Date().getTime();
         let terminated = false;
 
+        if (!Blockchain.synchronized)
+            return false;
+
         for (let i = this._workersList.length-1; i >= 0; i--){
 
-            if ( this._workersList[i].dateLast !== undefined && ( time - this._workersList[i].dateLast.getTime() > 4000)  ){
+            if ( this._workersList[i].dateLast !== undefined && ( time - this._workersList[i].dateLast.getTime() > 10000)  ){
 
                 this.terminateWorker(this._workersList[i]);
                 this._workersList.splice(i, 1);
@@ -44,6 +48,7 @@ class InterfaceBlockchainMiningWorkersList {
             this.createWorkers();
 
     }
+
 
     addWorkers(number){
 
@@ -73,7 +78,6 @@ class InterfaceBlockchainMiningWorkersList {
         worker.postMessage({message: "initialize", block: this.block, nonce: this.mining._nonce , count: this.mining.WORKER_NONCES_WORK });
 
         this.mining._nonce += this.mining.WORKER_NONCES_WORK;
-        this.mining._hashesPerSecond += this.mining.WORKER_NONCES_WORK;
 
         worker.dateLast = new Date();
     }

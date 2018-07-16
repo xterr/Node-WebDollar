@@ -8,6 +8,7 @@ import NodeBlockchainPropagation from "common/sockets/protocol/propagation/Node-
 import consts from 'consts/const_global'
 import MiniBlockchainAccountantTree from "../../../mini-blockchain/state/Mini-Blockchain-Accountant-Tree";
 import RevertActions from "common/utils/Revert-Actions/Revert-Actions";
+import Blockchain from "main-blockchain/Blockchain"
 
 /**
  * Blockchain contains a chain of blocks based on Proof of Work
@@ -43,7 +44,7 @@ class InterfaceBlockchainFork {
             this._blocksCopy = [];
             this._forkPromiseResolver = undefined;
             this.forkPromise = undefined;
-            this.downloadAllBlocks = 0;
+            this.downloadAllBlocks = false;
 
         } catch (exception){
             console.error("destroy fork raised an exception",  exception);
@@ -64,6 +65,7 @@ class InterfaceBlockchainFork {
         if (!Array.isArray(sockets))
             sockets = [sockets];
 
+        this.socketsFirst = sockets[0];
         this.sockets = sockets;
 
         this.forkReady = false;
@@ -263,7 +265,7 @@ class InterfaceBlockchainFork {
                 return false
             }
 
-            if (!this.downloadAllBlocks) await this.sleep(50);
+            if (!this.downloadAllBlocks) await this.sleep(30);
 
             try {
 
@@ -276,7 +278,7 @@ class InterfaceBlockchainFork {
                 return false;
             }
 
-            if (!this.downloadAllBlocks) await this.sleep(70);
+            if (!this.downloadAllBlocks) await this.sleep(20);
 
             try {
 
@@ -299,7 +301,7 @@ class InterfaceBlockchainFork {
                 return false;
             }
 
-            if (!this.downloadAllBlocks) await this.sleep(70);
+            if (!this.downloadAllBlocks) await this.sleep(20);
 
             this.blockchain.blocks.spliceBlocks(this.forkStartingHeight, false);
 
@@ -310,8 +312,7 @@ class InterfaceBlockchainFork {
 
             //TODO use the revertActions to revert the process
 
-            //accountant tree
-
+            //show information about Transactions Hash
             if (consts.DEBUG) {
 
                 console.log("accountant tree", this.blockchain.accountantTree.root.hash.sha256.toString("hex"));
@@ -339,16 +340,18 @@ class InterfaceBlockchainFork {
                     if (process.env.BROWSER || this.downloadAllBlocks) this.forkBlocks[index].blockValidation.blockValidationType['skip-sleep'] = true;
 
                     if (! (await this.saveIncludeBlock(index, revertActions)) )
-                        throw({message: "fork couldn't be included in main Blockchain ", index: index});
+                        throw( { message: "fork couldn't be included in main Blockchain ", index: index });
 
                     if ( !process.env.BROWSER )
-                        await this.sleep( this.downloadAllBlocks ? 10 : 100 );
+                        await this.sleep( this.downloadAllBlocks ? 10 : 30 );
+
+                    this.forkBlocks[index].socketPropagatedBy = this.socketsFirst;
 
                 }
 
                 await this.blockchain.saveBlockchain( this.forkStartingHeight );
 
-                if (!this.downloadAllBlocks) await this.sleep(30);
+                if (!this.downloadAllBlocks) await this.sleep(2);
 
                 console.log("FORK STATUS SUCCESS5: ", forkedSuccessfully, "position", this.forkStartingHeight);
 
@@ -382,15 +385,16 @@ class InterfaceBlockchainFork {
 
             }
 
-            if (!this.downloadAllBlocks) await this.sleep(30);
-
             await this.postForkTransactions(forkedSuccessfully);
 
-            if (!this.downloadAllBlocks) await this.sleep(30);
+            if (this.downloadAllBlocks) await this.sleep(30);
 
             this.postFork(forkedSuccessfully);
 
-            if (!this.downloadAllBlocks) await this.sleep(30);
+            if (this.downloadAllBlocks){
+                await this.sleep(30);
+                Blockchain.synchronizeBlockchain();
+            }
 
             if (forkedSuccessfully) {
                 this.blockchain.mining.resetMining();
@@ -401,6 +405,9 @@ class InterfaceBlockchainFork {
         });
 
         this.forkIsSaving = false;
+
+        if (success)
+            StatusEvents.emit("blockchain/new-blocks", {});
 
         // it was done successfully
         console.log("FORK SOLVER SUCCESS", success);
@@ -422,9 +429,9 @@ class InterfaceBlockchainFork {
 
                     this.blockchain.agent.protocol.askBlockchain(this.getSocket());
 
-                    await this.sleep(10);
+                    await this.sleep(100);
 
-                } else await this.sleep(100);
+                } else await this.sleep(20);
 
             }
         } catch (exception){
@@ -492,52 +499,62 @@ class InterfaceBlockchainFork {
 
             // remove transactions and place them in the queue
             this._blocksCopy.forEach((block) => {
-                block.data.transactions.transactions.forEach((transaction) => {
 
-                    transaction.confirmed = false;
+                if (block.data !==  undefined && block.data.transactions !== undefined)
+                    block.data.transactions.transactions.forEach((transaction) => {
 
-                    try {
-                        this.blockchain.transactions.pendingQueue.includePendingTransaction(transaction, "all");
-                    }
-                    catch (exception) {
-                        console.warn("Transaction Was Rejected to be Added to the Pending Queue ", transaction.toJSON() );
-                    }
+                        transaction.confirmed = false;
 
-                });
+                        try {
+                            this.blockchain.transactions.pendingQueue.includePendingTransaction(transaction, "all");
+                        }
+                        catch (exception) {
+                            console.warn("Transaction Was Rejected to be Added to the Pending Queue ", transaction.toJSON() );
+                        }
+
+                    });
             });
 
             this.forkBlocks.forEach((block)=> {
-                block.data.transactions.transactions.forEach((transaction) => {
-                    transaction.confirmed = true;
 
-                    this.blockchain.transactions.pendingQueue._removePendingTransaction(transaction);
+                if (block.data !==  undefined && block.data.transactions !== undefined)
+                    block.data.transactions.transactions.forEach((transaction) => {
+                        transaction.confirmed = true;
 
-                });
+                        this.blockchain.transactions.pendingQueue._removePendingTransaction(transaction);
+
+                    });
+
             });
 
         } else {
 
             this._blocksCopy.forEach( (block) => {
-                block.data.transactions.transactions.forEach((transaction) => {
-                    transaction.confirmed = true;
 
-                    this.blockchain.transactions.pendingQueue._removePendingTransaction(transaction);
+                if (block.data !==  undefined && block.data.transactions !== undefined)
+                    block.data.transactions.transactions.forEach((transaction) => {
+                        transaction.confirmed = true;
 
-                });
+                        this.blockchain.transactions.pendingQueue._removePendingTransaction(transaction);
+
+                    });
+
             });
 
             this.forkBlocks.forEach((block)=>{
-                block.data.transactions.transactions.forEach((transaction)=>{
-                    transaction.confirmed = false;
 
-                    try {
-                        this.blockchain.transactions.pendingQueue.includePendingTransaction(transaction, "all");
-                    }
-                    catch (exception) {
-                        console.warn("Transaction Was Rejected to be Added to the Pending Queue ", transaction.toJSON() );
-                    }
+                if (block.data !==  undefined && block.data.transactions !== undefined)
+                    block.data.transactions.transactions.forEach((transaction)=>{
+                        transaction.confirmed = false;
 
-                });
+                        try {
+                            this.blockchain.transactions.pendingQueue.includePendingTransaction(transaction, "all");
+                        }
+                        catch (exception) {
+                            console.warn("Transaction Was Rejected to be Added to the Pending Queue ", transaction.toJSON() );
+                        }
+
+                    });
             })
         }
 
@@ -639,6 +656,20 @@ class InterfaceBlockchainFork {
                 return;
 
         this.forkHeaders.push(hash);
+
+    }
+
+
+    toJSON(){
+
+        return {
+            forkReady: this.forkReady,
+            forkStartingHeightDownloading: this.forkStartingHeightDownloading,
+            forkChainStartingPoint: this.forkChainStartingPoint,
+            forkChainLength: this.forkChainLength,
+            forkBlocks: this.forkBlocks.length,
+            forkHeaders: this.forkHeaders,
+        }
 
     }
 
