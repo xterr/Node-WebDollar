@@ -7,21 +7,11 @@ const express = require('express')
 const cors = require('cors');
 const fs = require('fs')
 import consts from 'consts/const_global'
-<<<<<<< HEAD
-import Blockchain from "main-blockchain/Blockchain"
-import CONNECTIONS_TYPE from "node/lists/types/Connections-Type"
-import NodesList from 'node/lists/Nodes-List'
-import WebDollarCoins from "common/utils/coins/WebDollar-Coins"
-import BufferExtended from "common/utils/BufferExtended";
-import Serialization from "common/utils/Serialization";
-var BigNumber = require ('bignumber.js');
-=======
 
 import NodeAPIRouter from "../API-router/Node-API-Router"
 import NODE_API_TYPE from "../API-router/NODE_API_TYPE";
 
 import NodeServerSocketAPI from "../sockets/Node-Server-Socket-API"; //required because it will process the SocketAPI
->>>>>>> upstream/master
 
 class NodeExpress{
 
