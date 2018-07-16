@@ -53,6 +53,8 @@ consts.BLOCKCHAIN = {
         DIFFICULTY_TIME_BIGGER: 153060,
         WALLET_RECOVERY: 153060,
 
+        DIFFICULTY_REMOVED_CONDITION: 163000,
+
     }
 
 };
@@ -234,17 +236,21 @@ consts.SETTINGS = {
 
     NODE: {
 
-        VERSION: "1.140.3",
+        VERSION: "1.150.0",
         VERSION_COMPATIBILITY: "1.140.0",
+
+        VERSION_COMPATIBILITY_UPDATE: "1.150.0",
+        VERSION_COMPATIBILITY_UPDATE_BLOCK_HEIGHT: consts.BLOCKCHAIN.HARD_FORKS.DIFFICULTY_REMOVED_CONDITION,
+
         PROTOCOL: "WebDollar",
         SSL: true,
 
-        PORT: 8085, //port
+        PORT: 80, //port
     },
 
     PARAMS: {
         FALLBACK_INTERVAL: 10 * 1000,                     //miliseconds
-        STATUS_INTERVAL: 20 * 1000,                      //miliseconds
+        STATUS_INTERVAL: 40 * 1000,                      //miliseconds
 
         WAITLIST: {
             TRY_RECONNECT_AGAIN: 30 * 1000,             //miliseconds
@@ -365,8 +371,8 @@ if (process.env.MAXIMUM_CONNECTIONS_FROM_TERMINAL !== undefined)
 
 if ( consts.DEBUG === true ){
 
-    consts.SETTINGS.NODE.VERSION += "3";
-    consts.SETTINGS.NODE.VERSION_COMPATIBILITY += "3";
+    consts.SETTINGS.NODE.VERSION = "3"+consts.SETTINGS.NODE.VERSION;
+    consts.SETTINGS.NODE.VERSION_COMPATIBILITY = "3"+consts.SETTINGS.NODE.VERSION_COMPATIBILITY;
     //consts.SETTINGS.NODE.SSL = false;
     consts.MINING_POOL.MINING.MAXIMUM_BLOCKS_TO_MINE_BEFORE_ERROR = 10000;
 
@@ -377,6 +383,7 @@ if ( consts.DEBUG === true ){
     FallBackNodesList.nodes = [{
         "addr": ["http://webdollar.ddns.net:9095"],
     }];
+
 
 }
 

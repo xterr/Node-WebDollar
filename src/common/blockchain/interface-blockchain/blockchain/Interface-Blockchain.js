@@ -14,7 +14,8 @@ import RevertActions from "common/utils/Revert-Actions/Revert-Actions";
 import NodeBlockchainPropagation from "common/sockets/protocol/propagation/Node-Blockchain-Propagation";
 
 import InterfaceBlockchainBasic from "./Interface-Blockchain-Basic"
-import InterfaceBlockchainHardForks from "./../blocks/Hard-Forks/Interface-Blockchain-Hard-Forks"
+import InterfaceBlockchainHardForks from "./../blocks/hard-forks/Interface-Blockchain-Hard-Forks"
+import Log from 'common/utils/logging/Log';
 
 /**
  * Blockchain contains a chain of blocks based on Proof of Work
@@ -238,7 +239,7 @@ class InterfaceBlockchain extends InterfaceBlockchainBasic{
 
         if (saveLength)
             if (await this.db.save(this._blockchainFileName, this.blocks.length) !== true){
-                console.error("Error saving the blocks.length");
+                Log.error("Error saving the blocks.length", Log.LOG_TYPE.SAVING_MANAGER);
                 return false;
             }
 
@@ -295,7 +296,7 @@ class InterfaceBlockchain extends InterfaceBlockchainBasic{
                 validationType["skip-interlinks-update"] = true;
                 validationType["skip-target-difficulty-validation"] = true;
                 validationType["skip-calculating-proofs"] = true;
-                validationType["skip-calculating-block-nipopow-level"] = true;
+                //validationType["skip-calculating-block-nipopow-level"] = true;
                 validationType["skip-saving-light-accountant-tree-serializations"] = true;
                 validationType["skip-recalculating-hash-rate"] = true;
 
@@ -331,13 +332,13 @@ class InterfaceBlockchain extends InterfaceBlockchainBasic{
             //load the number of blocks
             numBlocks = await this.db.get(this._blockchainFileName);
             if (numBlocks === null) {
-                console.error("numBlocks was not found");
+                Log.error("numBlocks was not found", Log.LOG_TYPE.SAVING_MANAGER);
                 return false;
             }
 
-            console.info("=======================");
-            console.info("LOADING BLOCKS", numBlocks);
-            console.info("=======================");
+            Log.info("=======================", Log.LOG_TYPE.SAVING_MANAGER);
+            Log.info("LOADING BLOCKS", numBlocks, Log.LOG_TYPE.SAVING_MANAGER);
+            Log.info("=======================", Log.LOG_TYPE.SAVING_MANAGER);
 
         } catch (exception){
 
@@ -401,10 +402,10 @@ class InterfaceBlockchain extends InterfaceBlockchainBasic{
         } catch (exception){
 
             if (this.accountantTree !== undefined)
-                console.log("serializeMiniAccountantTreeERRROR", this.accountantTree.serializeMiniAccountant().toString("hex"));
+                Log.error("serializeMiniAccountantTreeERRROR", Log.LOG_TYPE.SAVING_MANAGER, this.accountantTree.serializeMiniAccountant().toString("hex"));
 
-            console.log("serializeMiniAccountantTreeERRROR", this.blocks.length-1);
-            console.error("blockchain.load raised an exception", exception);
+            Log.error("serializeMiniAccountantTreeERRROR", Log.LOG_TYPE.SAVING_MANAGER, this.blocks.length-1);
+            Log.error("blockchain.load raised an exception", Log.LOG_TYPE.SAVING_MANAGER,exception);
 
 
             answer = false;

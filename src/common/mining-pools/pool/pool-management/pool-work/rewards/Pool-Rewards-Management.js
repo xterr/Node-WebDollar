@@ -3,7 +3,7 @@ import BufferExtended from 'common/utils/BufferExtended';
 import BlockchainMiningReward from 'common/blockchain/global/Blockchain-Mining-Reward';
 import consts from 'consts/const_global'
 import InterfaceBlockchainBlockValidation from "common/blockchain/interface-blockchain/blocks/validation/Interface-Blockchain-Block-Validation"
-import PoolPayouts from "./Pool-Payouts"
+import PoolPayouts from "./Payout/Pool-Payouts"
 
 const LIGHT_SERVER_POOL_VALIDATION_BLOCK_CONFIRMATIONS = 50; //blocks
 const VALIDATION_BLOCK_CONFIRMATIONS = 20; //blocks
@@ -59,7 +59,8 @@ class PoolRewardsManagement{
         let firstBlock;
         for (let i=0; i < this.poolData.blocksInfo.length; i++)
             if ( this.poolData.blocksInfo[ i ].block !== undefined )
-                if ( firstBlock === undefined || this.poolData.blocksInfo[i].block.height < firstBlock) firstBlock = this.poolData.blocksInfo[ i ].block.height;
+                if ( firstBlock === undefined || this.poolData.blocksInfo[i].block.height < firstBlock)
+                    firstBlock = this.poolData.blocksInfo[ i ].block.height;
 
         for (let i = this.blockchain.blocks.length-1, n = Math.max( this.blockchain.blocks.blocksStartingPoint, firstBlock ); i>= n; i-- ) {
 
@@ -135,7 +136,7 @@ class PoolRewardsManagement{
 
                 } else{
                     
-                    if (blockInfo.height > this.blockchain.blocks.length - VALIDATION_BLOCK_CONFIRMATIONS)
+                    if ( blockInfo.height > this.blockchain.blocks.length - VALIDATION_BLOCK_CONFIRMATIONS )
                         this.poolData.blocksInfo[i].confirmationsFailsTrials++;
 
                 }
@@ -230,7 +231,7 @@ class PoolRewardsManagement{
 
                 let block = this.blockchain.blockCreator.createEmptyBlock(i, blockValidation);
                 block.data._onlyHeader = true; //only header
-                block.deserializeBlock(answer.block, i, undefined, blockInfo.block.difficultyTarget);
+                block.deserializeBlock(answer.block, i, undefined, blockInfo.block.difficultyTargetPrev);
 
 
                 if (i >= this.poolData.blocksInfo[i].block.height) {
