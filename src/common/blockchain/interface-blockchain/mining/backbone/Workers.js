@@ -1,3 +1,7 @@
+// Contributor: Adelin
+
+import Serialization from "../../../../utils/Serialization";
+
 const FS = require('fs');
 const OS = require('os');
 const { fork } = require('child_process');
@@ -5,7 +9,7 @@ import consts from 'consts/const_global'
 
 class Workers {
     /**
-     * @param {InterfaceBlockchainMining} ibb
+     * @param {InterfaceBlockchainBackboneMining} ibb
      *
      * @return {Workers}
      */
@@ -13,11 +17,8 @@ class Workers {
         this.ibb = ibb;
 
         this._abs_end = 0xFFFFFFFF;
-        this._default_resolve = {
-            result: false,
-            nonce: -1,
-            hash: consts.BLOCKCHAIN.BLOCKS_MAX_TARGET_BUFFER
-        };
+
+        this._from_pool = undefined;
 
         // workers setup
         this._worker_path = consts.TERMINAL_WORKERS.PATH;
@@ -36,7 +37,6 @@ class Workers {
         // target
         this.block = undefined;
         this.difficulty = undefined;
-        this._in_pool = undefined;
 
         // current work
         this._current = undefined;
@@ -45,11 +45,20 @@ class Workers {
         this._final_batch = false;
         this._run_timeout = false;
 
-        this._initiateWorkers();
     }
 
     haveSupport() {
-        return this._maxWorkersDefault() !== 0; // ignore if it returns 0
+        // disabled by miner
+        if (consts.TERMINAL_WORKERS.MAX == -1) {
+            return false;
+        }
+
+        // it needs at least 2
+        if (this.workers_max <= 1) {
+            return false;
+        }
+
+        return true;
     }
 
     max() {
@@ -62,15 +71,33 @@ class Workers {
 
         this.block = this.ibb.block;
         this.difficulty = this.ibb.difficulty;
+        this.height = this.ibb.block.height;
 
-        this._in_pool = false;
-        if (!this.block.height) {
-            this._in_pool = true;
+        this._from_pool = true;
+        if (this.block.height) {
+            // if the given block has a height, it means it's mining solo.
+            this._from_pool = false;
+        }
+
+        if ( !Buffer.isBuffer(this.block) ){
+
+            // solo mining
+            this.block = Buffer.concat([
+                Serialization.serializeBufferRemovingLeadingZeros(Serialization.serializeNumber4Bytes(this.block.height)),
+                Serialization.serializeBufferRemovingLeadingZeros(this.block.difficultyTargetPrev),
+                this.block.computedBlockPrefix,
+            ]) ;
+
         }
 
         // resets
         this._finished = false;
         this._final_batch = false;
+
+        this.ibb.bestHash = Buffer.from("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", "hex");
+        this.ibb.bestHashNonce = 0;
+
+        this._initiateWorkers();
 
         this._loop(loop_delay);
     }
@@ -80,9 +107,9 @@ class Workers {
     }
 
     _initiateWorkers() {
-        for (let index = 0; index < this.workers_max; index++) {
+
+        for (let index = this.workers_list.length - 1; index < this.workers_max; index++)
             this._createWorker(index);
-        }
 
         return this;
     }
@@ -96,36 +123,62 @@ class Workers {
         worker._is_batching = false;
 
         worker.on('message', (msg) => {
-            // hashing
+
+            // hashing: hashed one time, so we are incrementing hashes per second
             if (msg.type == 'h') {
-                this.ibb._hashesPerSecond++;
+                this.ibb._hashesPerSecond += 3;
 
                 return false;
             }
 
-            // solved
+            // solved: stop and resolve but with a solution
             if (msg.type == 's') {
+
                 this._finished = true;
+
 
                 this.ibb._workerResolve({
                     result: true,
-                    nonce: parseInt(msg.solution.nonce),
-                    hash: new Buffer(msg.solution.hash),
+                    nonce: parseInt(msg.nonce),
+                    hash: new Buffer(msg.hash),
                 });
+
+                // console.log("sol",new Buffer(msg.hash).toString("hex"));
 
                 return false;
             }
 
-            // batching
+            // batching: finished a batch of nonces
             if (msg.type == 'b') {
+
                 worker._is_batching = false;
+
+                let bestHash = new Buffer(msg.bestHash);
+
+                let change = false;
+                for (let i = 0, l = this.ibb.bestHash.length; i < l; i++)
+                    if (bestHash[i] < this.ibb.bestHash[i]) {
+                        change = true;
+                        break;
+                    }
+                    else if (bestHash[i] > this.ibb.bestHash[i])
+                        break;
+
+
+                if ( change ) {
+                    this.ibb.bestHash = bestHash;
+                    this.ibb.bestHashNonce = parseInt(msg.bestNonce)
+                }
+
+                // if (Math.random() < 0.10)
+                //     console.log("best",this.bestHash.toString("hex"));
 
                 // keep track of the ones that are working
                 this._working--;
 
-                if (!this._working && this._current >= this._current_max) {
+                // if none of the threads are working and we finished the range, then we should stop and resolve
+                if (!this._working && this._current >= this._current_max)
                     this._stopAndResolve();
-                }
 
                 return false;
             }
@@ -143,7 +196,11 @@ class Workers {
             clearTimeout(this._run_timeout);
         }
 
-        this.ibb._workerResolve(this._default_resolve);
+        this.ibb._workerResolve({
+            result: false,
+            hash: this.ibb.bestHash,
+            nonce: this.ibb.bestHashNonce
+        });
 
         return this;
     }
@@ -151,23 +208,25 @@ class Workers {
     _loop(_delay) {
         const ibb_halt = !this.ibb.started || this.ibb.resetForced || (this.ibb.reset && this.ibb.useResetConsensus);
         if (ibb_halt) {
-            this._stopAndResolve();
+
+            if (!this._finished)
+                this._stopAndResolve();
 
             return false;
         }
 
         this.workers_list.forEach((worker, index) => {
-            if (this._finished) {
-                return false;
-            }
 
-            if (worker._is_batching) {
+            if (this._finished)
                 return false;
-            }
 
-            if (this._final_batch) {
+
+            if (worker._is_batching)
                 return false;
-            }
+
+
+            if (this._final_batch)
+                return false;
 
             worker._is_batching = true;
 
@@ -182,10 +241,7 @@ class Workers {
             worker.send({
                 command: 'start',
                 data: {
-                    block: (!this._in_pool) ? false : this.block,
-                    height: (this._in_pool) ? false : this.block.height,
-                    difficultyTargetPrev: (this._in_pool) ? false : this.block.difficultyTargetPrev,
-                    computedBlockPrefix: (this._in_pool) ? false : this.block.computedBlockPrefix,
+                    block: this.block,
                     difficulty: this.difficulty,
                     start: this._current,
                     batch: this._final_batch ? this._final_batch : this.worker_batch,
@@ -193,6 +249,7 @@ class Workers {
             });
 
             this._current += this.worker_batch;
+
         });
 
         // healthy loop delay

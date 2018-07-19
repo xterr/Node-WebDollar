@@ -6,6 +6,7 @@ import Blockchain from "main-blockchain/Blockchain"
 import StatusEvents from "common/events/Status-Events";
 
 import TransactionsListForPropagation from "./Transactions-List-For-Propagation";
+import CONNECTION_TYPE from "node/lists/types/Connection-Type";
 
 class InterfaceBlockchainTransactionsProtocol {
 
@@ -19,33 +20,43 @@ class InterfaceBlockchainTransactionsProtocol {
 
         this.transactionsForPropagation = new TransactionsListForPropagation(this.blockchain);
 
+        StatusEvents.on('blockchain/status', async (data)=>{
+
+            if (Blockchain.MinerPoolManagement !== undefined && Blockchain.MinerPoolManagement.minerPoolStarted)
+                return false;
+
+            if (data.message === "Blockchain Ready to Mine" && NodesList !== undefined){
+
+                for (let i=0; i < NodesList.nodes.length; i++)
+                    if (NodesList.nodes[i] !== undefined && NodesList.nodes[i].socket !== undefined && NodesList.nodes[i].socket.node.protocol.connectionType === CONNECTION_TYPE.CONNECTION_CLIENT_SOCKET){
+
+                        setTimeout(()=> {
+
+                            if (NodesList.nodes[i] !== undefined && NodesList.nodes[i].socket !== undefined)
+                                this.downloadTransactions(NodesList.nodes[i].socket, 0, 30);
+
+                        }, 5000 + Math.random()*15000 );
+
+                    }
+
+            }
+
+        } );
+
     }
 
     _newSocketCreateProtocol(nodesListObject){
 
         let socket = nodesListObject.socket;
 
-        if (Blockchain.MinerPoolManagement.minerPoolStarted){
+        if (Blockchain.MinerPoolManagement !== undefined && Blockchain.MinerPoolManagement.minerPoolStarted)
             return false;
-        }
 
         this.initializeTransactionsPropagation(socket);
 
         if (Blockchain.loaded){
             this.downloadTransactions(socket, 0, 30);
         }
-
-        //after
-        Blockchain.onLoaded.then((answer)=>{
-            // in case the Blockchain was not loaded, I will not be interested in transactions
-
-            setTimeout(()=>{
-
-                this.downloadTransactions(socket, 0, 30);
-
-            }, 5000 + Math.random()*5000 );
-
-        });
 
     }
 
@@ -81,13 +92,10 @@ class InterfaceBlockchainTransactionsProtocol {
 
                 }
 
-                if ( transaction.fee < consts.MINING_POOL.MINING.FEE_THRESHOLD  )  //not good
-                    return false;
-
                 if (!transaction.isTransactionOK(undefined, false))
                     return false;
 
-                await this.blockchain.sleep(25);
+                await this.blockchain.sleep(25 + transaction.from.addresses.length + transaction.to.addresses.length );
 
                 if (!this.blockchain.transactions.pendingQueue.includePendingTransaction(transaction, socket))
                     throw {message: "I already have this transaction"};
@@ -187,7 +195,7 @@ class InterfaceBlockchainTransactionsProtocol {
         //             if (! Blockchain.blockchain.transactions.pendingQueue.list[i].isTransactionOK(true)) continue;
         //
         //             if (response.format === "json") list.push(Blockchain.blockchain.transactions.pendingQueue.list[i].toJSON()); else
-        //             if (response.format === "buffer") list.push(Blockchain.blockchain.transactions.pendingQueue.list[i].serializeTransaction());
+        //             if (response.format === "buffer") list.push(Blockchain.blockchain.transactions.pendingQueue.list[i].serializeTransaction);
         //
         //             if (i % 10 === 0){
         //
@@ -248,11 +256,6 @@ class InterfaceBlockchainTransactionsProtocol {
 
                 try {
 
-                    if ( transaction.fee < consts.MINING_POOL.MINING.FEE_THRESHOLD  ) { //not good
-                        errors += 0.25;
-                        continue;
-                    }
-
                     try {
 
                         if (!this.blockchain.mining.miningTransactionSelector.validateTransaction(transaction)){
@@ -278,6 +281,8 @@ class InterfaceBlockchainTransactionsProtocol {
                 if (errors >= 4)
                     return;
 
+
+                await this.blockchain.sleep(25 + transaction.from.addresses.length + transaction.to.addresses.length );
 
             }
 
