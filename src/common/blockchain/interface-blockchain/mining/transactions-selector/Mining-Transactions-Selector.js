@@ -1,6 +1,7 @@
 import consts from 'consts/const_global'
 import BufferExtended from "common/utils/BufferExtended";
 import InterfaceBlockchainTransactionsWizard from "./../../transactions/wizard/Interface-Blockchain-Transactions-Wizard"
+import InterfaceBlockchainAddressHelper from "../../addresses/Interface-Blockchain-Address-Helper";
 
 class MiningTransactionsSelector{
 
@@ -22,6 +23,10 @@ class MiningTransactionsSelector{
                 throw {message: "too many outputs", from: transaction.to.addresses[j]};
 
         }
+
+        //validating its own transaction
+        if (transaction.from.addresses[0].unencodedAddress.equals( this.blockchain.mining.unencodedMinerAddress ) )
+            return true;
 
         //verify fee
         if (transaction.fee < this.blockchain.transactions.wizard.calculateFeeWizzard(transaction.serializeTransaction(), miningFeePerByte ) )
@@ -45,7 +50,7 @@ class MiningTransactionsSelector{
 
             try {
                 
-                console.log(transaction.txId.toString("hex"));
+                console.log(transaction.txId.toString("hex"), InterfaceBlockchainAddressHelper.generateAddressWIF(transaction.from.addresses[0].unencodedAddress, false, true) );
 
                 this.validateTransaction(transaction, miningFeePerByte);
 
@@ -87,9 +92,8 @@ class MiningTransactionsSelector{
             }
 
 
-            if (this._transactions.length > 20){
+            if (this._transactions.length > 60)
                 break;
-            }
 
             i++;
         }

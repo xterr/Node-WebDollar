@@ -317,6 +317,9 @@ class InterfaceBlockchainTransactionFrom {
                 address.unencodedAddress = InterfaceBlockchainAddressHelper._generateUnencodedAddressFromPublicKey(address.publicKey);
                 offset += consts.ADDRESSES.PUBLIC_KEY.LENGTH;
 
+                if (this.transaction.version > 0x01)
+                    address.unencodedAddress = InterfaceBlockchainAddressHelper._generateUnencodedAddressFromPublicKey(address.publicKey, false);
+
                 address.signature = BufferExtended.substr(buffer, offset, consts.TRANSACTIONS.SIGNATURE_SCHNORR.LENGTH);
                 offset += consts.TRANSACTIONS.SIGNATURE_SCHNORR.LENGTH;
 
