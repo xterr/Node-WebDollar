@@ -45,11 +45,28 @@ class Workers {
         this._final_batch = false;
         this._run_timeout = false;
 
+        setInterval( this._makeUnresponsiveThreads.bind(this), 5000 );
+
+    }
+
+    _makeUnresponsiveThreads(){
+
+        let date = new Date().getTime();
+        //
+        // for (let i=0; i< this.workers_list.length; i++)
+        //     if ( (date  - this.workers_list[i].date ) > 7000 ){
+        //         //this.workers_list[i]._is_batching = false;
+        //         this._initializeWorker(i);
+        //     }
+
+        if ( this._current >= this._current_max )
+            this._stopAndResolve();
+
     }
 
     haveSupport() {
         // disabled by miner
-        if (consts.TERMINAL_WORKERS.MAX == -1) {
+        if (consts.TERMINAL_WORKERS.MAX === -1) {
             return false;
         }
 
@@ -108,16 +125,19 @@ class Workers {
 
     _initiateWorkers() {
 
-        for (let index = 0; index < this.workers_max; index++) {
+        for (let index = this.workers_list.length ; index < this.workers_max; index++)
+            this._initializeWorker(index);
 
-            if (this.workers_list[index] && typeof this.workers_list[index].kill === "function")
-                this.workers_list[index].kill();
-
-            this._createWorker(index);
-
-        }
 
         return this;
+    }
+
+    _initializeWorker(index){
+
+        if (this.workers_list[index] && typeof this.workers_list[index].kill === "function")
+            this.workers_list[index].kill('SIGINT');
+
+        this._createWorker(index);
     }
 
     _createWorker(index) {
@@ -126,9 +146,16 @@ class Workers {
             this._worker_path, {}, { silent: this._silent }
         );
 
+        console.log("create worker");
+
         worker._is_batching = false;
 
         worker.on('message', (msg) => {
+
+            // if (this.ibb._hashesPerSecond === 0)
+            //     console.info(msg.type);
+
+            worker.date = new Date().getTime();
 
             // hashing: hashed one time, so we are incrementing hashes per second
             if (msg.type == 'h') {
@@ -190,6 +217,8 @@ class Workers {
             }
         });
 
+        worker.date = new Date().getTime();
+
         this.workers_list[index] = worker;
 
         return this;
@@ -212,7 +241,9 @@ class Workers {
     }
 
     _loop(_delay) {
+
         const ibb_halt = !this.ibb.started || this.ibb.resetForced || (this.ibb.reset && this.ibb.useResetConsensus);
+
         if (ibb_halt) {
 
             if (!this._finished)
@@ -237,9 +268,8 @@ class Workers {
             worker._is_batching = true;
 
             // add only the rest
-            if (this._current_max - this._current < this.worker_batch) {
-                this._final_batch = this._current_max - this._current;
-            }
+            if (this._current_max - this._current < this.worker_batch)
+                this._final_batch = this._current_max - this._current
 
             // keep track of the ones that are working
             this._working++;
@@ -253,6 +283,8 @@ class Workers {
                     batch: this._final_batch ? this._final_batch : this.worker_batch,
                 }
             });
+
+            worker.date = new Date().getTime();
 
             this._current += this.worker_batch;
 
