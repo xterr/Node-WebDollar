@@ -110,7 +110,7 @@ class MinerPoolMining extends InheritedPoolMining {
             this.resetForced = true;
         }
 
-        Log.info("New Work: "+ work.start + " : " + work.end, Log.LOG_TYPE.POOLS );
+        Log.info("New Work: "+ (work.end - work.start), Log.LOG_TYPE.POOLS );
 
     }
 
@@ -131,6 +131,7 @@ class MinerPoolMining extends InheritedPoolMining {
                     let timeInitial = new Date().getTime();
 
                     this._isBeingMining = true;
+                    let workHeight = this._miningWork.height;
                     let answer = await this._run();
                     this._isBeingMining = false;
 
@@ -141,6 +142,7 @@ class MinerPoolMining extends InheritedPoolMining {
 
                     if (!this.resetForced ) {
                         this._miningWork.resolved = true;
+                        answer.height = workHeight;
                         await this.minerPoolManagement.minerPoolProtocol.pushWork( answer, this._miningWork.poolSocket);
                     } else {
                         this.resetForced = false;
