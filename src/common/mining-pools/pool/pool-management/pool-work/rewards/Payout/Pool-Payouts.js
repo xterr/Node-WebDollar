@@ -68,7 +68,7 @@ class PoolPayouts{
         Log.info("--------------------------------------------------", Log.LOG_TYPE.POOLS);
 
         let blocksConfirmed = [];
-        for (let i=0; i<this.poolData.blocksInfo.length; i++)
+        for (let i=0; i<this.poolData.blocksInfo.length-1; i++)
             if (this.poolData.blocksInfo[i].confirmed && !this.poolData.blocksInfo[i].payout)
                 blocksConfirmed.push(this.poolData.blocksInfo[i]);
 
@@ -148,8 +148,8 @@ class PoolPayouts{
             //add rewardConfirmedOther
             this.poolData.miners.forEach((miner)=>{
 
-                if ( miner.__tempRewardConfirmedOther + miner.rewardConfirmedOther >= consts.MINING_POOL.MINING.MINING_POOL_MINIMUM_PAYOUT )
-                    this._addAddressTo(miner.address).amount += miner.__tempRewardConfirmedOther +miner.rewardConfirmedOther ;
+                if ( (miner.__tempRewardConfirmedOther + miner.rewardConfirmedOther) >= consts.MINING_POOL.MINING.MINING_POOL_MINIMUM_PAYOUT )
+                    this._addAddressTo(miner.address).amount += miner.__tempRewardConfirmedOther + miner.rewardConfirmedOther ;
 
             });
 
@@ -163,12 +163,22 @@ class PoolPayouts{
             for (let i=0; i < this._toAddresses.length; i++)
                 this._toAddresses[i].amount = Math.floor( this._toAddresses[i].amount );
 
+            Log.info("Number of original recipients: " + this._toAddresses.length, Log.LOG_TYPE.POOLS);
+
             this._removeAddressTo(this.blockchain.mining.unencodedMinerAddress);
 
-            let totalToPay = 0;
-            for (let i=0; i< this._toAddresses.length; i++ ){
-                totalToPay += this._toAddresses[i].amount;
+            Log.info("Number of initial recipients: " + this._toAddresses.length, Log.LOG_TYPE.POOLS);
+
+            for (let i=this._toAddresses.length-1; i >= 0; i--){
+                if (this._toAddresses[i].amount < consts.MINING_POOL.MINING.MINING_POOL_MINIMUM_PAYOUT)
+                    this._removeAddressTo(this._toAddresses[i].address);
             }
+
+            let totalToPay = 0;
+            for (let i=0; i< this._toAddresses.length; i++ )
+                totalToPay += this._toAddresses[i].amount;
+
+            Log.info("Number of recipients: " + this._toAddresses.length, Log.LOG_TYPE.POOLS);
             Log.info("Payout Total To Pay: " + (totalToPay / WebDollarCoins.WEBD), Log.LOG_TYPE.POOLS);
 
             let index = 0;
@@ -177,10 +187,11 @@ class PoolPayouts{
                 let toAddresses = this._toAddresses.slice(index*255, (index+1)*255);
 
                 try {
-                    let transaction = await Blockchain.Transactions.wizard.createTransactionSimple(this.blockchain.mining.minerAddress, toAddresses, undefined, 0, );
+                    let transaction = await Blockchain.Transactions.wizard.createTransactionSimple( this.blockchain.mining.minerAddress, toAddresses, undefined, 0, );
                     if (!transaction.result) throw {message: "Transaction was not made"};
                 } catch (exception){
                     Log.error("Payout: ERROR CREATING TRANSACTION", Log.LOG_TYPE.POOLS);
+                    throw exception;
                 }
 
                 index++;
@@ -291,7 +302,7 @@ class PoolPayouts{
 
         let index = this._findAddressTo(address, true);
         if (index !== -1)
-            this._toAddresses.splice(index);
+            this._toAddresses.splice(index, 1);
 
     }
 

@@ -7,6 +7,8 @@ const uuid = require('uuid');
 const EventEmitter = require('events');
 import Blockchain from "main-blockchain/Blockchain"
 
+import Log from 'common/utils/logging/Log';
+
 class ProcessWorker{
 
     constructor(id, noncesWorkBatch){
@@ -26,7 +28,7 @@ class ProcessWorker{
         this._is_batching = false;
         this._path = '';
 
-        this._timeoutValidation = setTimeout( this._validateWork.bind(this), 200);
+        this._timeoutValidation = setTimeout( this._validateWork.bind(this), 20);
     }
 
     _getProcessParams(){
@@ -78,6 +80,9 @@ class ProcessWorker{
     }
 
 
+    kill(param){
+        return this._child.kill(param);
+    }
 
     async send(length, block, difficulty, start, end, batch){
 
@@ -97,18 +102,20 @@ class ProcessWorker{
         data += batch + ' ';
         data += 218391 + '';
 
-        this._sendDataTimeout = setTimeout( this._writeWork.bind(this, data), 100 );
+        this._timeStart = new Date().getTime();
+        this._count = end - start;
 
+        this._sendDataTimeout = setTimeout( this._writeWork.bind(this, data), 10 );
 
     }
 
     async _writeWork(data){
 
         try {
-            await fs.writeFileSync( this._filename + this.suffix, data, {flag: 'w'});
+            await fs.writeFileSync( this._filename + this.suffix, data, "binary");
         } catch (exception){
             console.error("Error sending the data to GPU", exception);
-            this._sendDataTimeout = setTimeout( this._writeWork.bind(this,data), 100 );
+            this._sendDataTimeout = setTimeout( this._writeWork.bind(this,data), 10 );
         }
 
     }
@@ -121,7 +128,7 @@ class ProcessWorker{
         try {
             data = await fs.readFileSync( this._filename+ this.suffix + 'output');
         } catch (exception){
-            this._timeoutValidation = setTimeout( this._validateWork.bind(this), 100);
+            this._timeoutValidation = setTimeout( this._validateWork.bind(this), 10);
             return;
         }
 
@@ -136,6 +143,10 @@ class ProcessWorker{
             if (hash !== this._prevHash) {
 
                 console.info(data);
+
+                if ( data.type === "b" || data.type === "s")
+                    data.h = Math.floor(this._count / (new Date().getTime() - this._timeStart) * 1000);
+
                 this._emit("message", data);
 
                 this._prevHash = hash;
@@ -145,7 +156,7 @@ class ProcessWorker{
 
         }
 
-        this._timeoutValidation = setTimeout( this._validateWork.bind(this), 100);
+        this._timeoutValidation = setTimeout( this._validateWork.bind(this), 10);
     }
 
 

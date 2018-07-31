@@ -238,7 +238,7 @@ consts.SETTINGS = {
     NODE: {
 
         VERSION: "1.165.0",
-        VERSION_COMPATIBILITY: "1.160.0",
+        VERSION_COMPATIBILITY: "1.162.0",
 
         VERSION_COMPATIBILITY_UPDATE: "",
         VERSION_COMPATIBILITY_UPDATE_BLOCK_HEIGHT: 0,
@@ -373,8 +373,8 @@ consts.TERMINAL_WORKERS = {
     // file gets created on build
     CPU_WORKER_NONCES_WORK: 700,  //per seconds
 
-    CPU_CPP_WORKER_NONCES_WORK: 30000,  //per second
-    CPU_CPP_WORKER_NONCES_WORK_BATCH: 2000,  //per second
+    CPU_CPP_WORKER_NONCES_WORK: 20000,  //per second
+    CPU_CPP_WORKER_NONCES_WORK_BATCH: 500,  //per second
 
     //NONCES_WORK should be way bigger than WORK_BATCHES
 

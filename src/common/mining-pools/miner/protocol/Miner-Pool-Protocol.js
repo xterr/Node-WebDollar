@@ -312,16 +312,26 @@ class MinerProtocol extends PoolProtocolList{
 
         try {
 
-            Log.info("Push Work: ("+miningAnswer.nonce+")"+ miningAnswer.hash.toString("hex") , Log.LOG_TYPE.POOLS);
-
             if (poolSocket === undefined)
                 poolSocket = this.connectedPools[0];
 
             if (poolSocket === null || poolSocket === undefined) throw {message: "You are disconnected"};
 
-            let answer = await poolSocket.node.sendRequestWaitOnce("mining-pool/work-done", {
+            let answer = poolSocket.node.sendRequestWaitOnce("mining-pool/work-done", {
                 work: miningAnswer,
             }, "answer", 6000);
+
+            Log.info("Push Work: ("+miningAnswer.nonce+")"+ miningAnswer.hash.toString("hex") , Log.LOG_TYPE.POOLS);
+
+            if (!miningAnswer.result){
+                try {
+                    Log.warn("Statistics: Real " + Math.floor( miningAnswer.hashes / miningAnswer.timeDiff * 1000 )+ " h/s ", Log.LOG_TYPE.POOLS);
+                } catch (exception){
+
+                }
+            }
+
+            answer = await answer;
 
             if (answer === null) throw {message: "WorkDone: Answer is null"};
             if (answer.result !== true) throw {message: "WorkDone: Result is not True", reason: answer.message};

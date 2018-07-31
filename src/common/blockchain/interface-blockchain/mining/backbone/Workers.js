@@ -2,10 +2,13 @@
 
 import Serialization from "common/utils/Serialization";
 import Argon2 from 'common/crypto/Argon2/Argon2'
+import Log from 'common/utils/logging/Log';
 
 const FS = require('fs');
 const OS = require('os');
 const { fork } = require('child_process');
+//const fkill = require('fkill');
+
 import consts from 'consts/const_global'
 import ProcessWorkerCPP from "./Process-Worker-CPP";
 
@@ -26,21 +29,35 @@ class Workers {
         if (consts.TERMINAL_WORKERS.TYPE === "cpu") {
 
             this._worker_path = consts.TERMINAL_WORKERS.PATH;
-            this.workers_max = this._maxWorkersDefault() || 1;
+            this.workers_max = consts.TERMINAL_WORKERS.CPU_MAX || this._maxWorkersDefault() || 1;
             this.worker_batch = consts.TERMINAL_WORKERS.CPU_WORKER_NONCES_WORK || 500;
             this.worker_batch_thread = this.worker_batch;
+            this.ibb._avoidShowingZeroHashesPerSecond = false;
 
         } else if (consts.TERMINAL_WORKERS.TYPE === "cpu-cpp") {
             this._worker_path = consts.TERMINAL_WORKERS.PATH_CPP;
             this.workers_max = consts.TERMINAL_WORKERS.CPU_MAX || 1;
             this.worker_batch = consts.TERMINAL_WORKERS.CPU_CPP_WORKER_NONCES_WORK || 500;
             this.worker_batch_thread = consts.TERMINAL_WORKERS.CPU_CPP_WORKER_NONCES_WORK_BATCH || 500;
+            this.ibb._avoidShowingZeroHashesPerSecond = true;
         }
         else if (consts.TERMINAL_WORKERS.TYPE === "gpu") {
             this._worker_path = consts.TERMINAL_WORKERS.PATH_GPU;
             this.workers_max = consts.TERMINAL_WORKERS.GPU_INSTANCES||1;
             this.worker_batch = consts.TERMINAL_WORKERS.GPU_WORKER_NONCES_WORK;
             this.worker_batch_thread = consts.TERMINAL_WORKERS.GPU_WORKER_NONCES_WORK_BATCH;
+            this.ibb._avoidShowingZeroHashesPerSecond = true;
+        } else {
+
+            Log.error('NO WORKER SPECIFIED. Specify "cpu", "cpu-cpp", "gpu" ', Log.LOG_TYPE.default);
+
+        }
+
+
+        if (!FS.existsSync(this._worker_path)) {
+            Log.error('Worker build is missing.', Log.LOG_TYPE.default);
+
+            return false;
         }
 
 
@@ -59,11 +76,6 @@ class Workers {
         this._final_batch = false;
         this._run_timeout = false;
 
-        if (!FS.existsSync(this._worker_path)) {
-            console.log('Worker build is missing.');
-
-            return false;
-        }
 
         setInterval( this._makeUnresponsiveThreads.bind(this), 5000 );
 
@@ -80,23 +92,36 @@ class Workers {
                     this.workers_list[i].date = new Date().getTime();
                 }
 
-        // if ( this._current >= this._current_max )
-        //     this._stopAndResolve();
+        if ( this._current >= this._current_max )
+            this._stopAndResolve();
 
     }
 
     haveSupport() {
         // disabled by miner
-        if (consts.TERMINAL_WORKERS.MAX === -1) {
+        if (consts.TERMINAL_WORKERS.CPU_MAX === -1)
             return false;
-        }
 
         // it needs at least 2
-        if (this.workers_max <= 1) {
+        if (this.workers_max <= 1)
             return false;
-        }
 
         return true;
+    }
+
+    stopMining(){
+
+        try {
+
+            for (let i = 0; i < this.workers_list.length; i++){
+                if (this.workers_list[i] && typeof this.workers_list[i].kill === "function")
+                    this.workers_list[i].kill('SIGINT');
+            }
+
+        } catch (exception){
+
+        }
+
     }
 
     max() {
@@ -148,9 +173,8 @@ class Workers {
 
         let count = this.workers_max;
 
-        if (consts.TERMINAL_WORKERS.TYPE === "cpu-cpp") {
+        if ( consts.TERMINAL_WORKERS.TYPE === "cpu-cpp" )
             count = 1;
-        }
 
         for (let index = this.workers_list.length ; index < count; index++)
             await this._initializeWorker(index);
@@ -175,20 +199,23 @@ class Workers {
             worker = fork(
                 this._worker_path, {}, {silent: this._silent}
             );
+            Log.info("CPU worker created", Log.LOG_TYPE.defaultLogger );
         } else
         if (consts.TERMINAL_WORKERS.TYPE === "cpu-cpp") {
 
             worker = new ProcessWorkerCPP( index,  this.worker_batch, this.workers_max );
             worker.start(this._worker_path);
 
+            Log.info("CPU CPP worker created", Log.LOG_TYPE.defaultLogger );
+
         } else if (consts.TERMINAL_WORKERS.TYPE === "gpu") {
 
             worker = new GPUWorker( index );
             worker.start(this._worker_path);
 
-        }
+            Log.info("GPU worker created", Log.LOG_TYPE.defaultLogger );
 
-        console.log("create worker");
+        }
 
         worker._is_batching = false;
 
@@ -276,7 +303,7 @@ class Workers {
 
                     let hash = await Argon2.hash(block);
                     if (false === hash.equals(bestHash))
-                        console.error("HASH is INVALID!!!");
+                        console.error("HASH MAY BE TO OLD!!!");
                     else
                         console.info("HASH is OK!!!");
                 }
@@ -294,6 +321,7 @@ class Workers {
     }
 
     _stopAndResolve() {
+
         this._finished = true;
 
         if (this._run_timeout) {
