@@ -106,10 +106,7 @@ class InterfaceBlockchainProtocolForkSolver{
 
         let fork, forkFound;
 
-        try{
-
-            if (!this.blockchain.agent.light  && currentBlockchainLength > forkChainLength)
-                throw {message: "discoverAndProcessFork - fork is smaller fork than mine"};
+        try {
 
             let answer = this.blockchain.forksAdministrator.findFork(socket, forkLastBlockHash, forkProof);
             if (answer !== null) return answer;
@@ -215,6 +212,10 @@ class InterfaceBlockchainProtocolForkSolver{
                 if ( !this.blockchain.agent.light && forkChainLength >= this.blockchain.blocks.length + consts.SETTINGS.PARAMS.CONNECTIONS.FORKS.MAXIMUM_BLOCKS_TO_DOWNLOAD){
                     fork.downloadAllBlocks = true;
                     forkChainLength = Math.min(forkChainLength, this.blockchain.blocks.length + consts.SETTINGS.PARAMS.CONNECTIONS.FORKS.MAXIMUM_BLOCKS_TO_DOWNLOAD);
+                }
+
+                if ( (forkChainLength - binarySearchResult.position) >= consts.SETTINGS.PARAMS.CONNECTIONS.FORKS.MAXIMUM_BLOCKS_TO_DOWNLOAD_TO_USE_SLEEP){
+                    fork.downloadBlocksSleep = true;
                 }
 
                 fork.forkStartingHeight = binarySearchResult.position;
@@ -337,7 +338,7 @@ class InterfaceBlockchainProtocolForkSolver{
 
             //console.log("block.hash", block.hash.toString("hex"));
 
-            if (fork.downloadAllBlocks && nextBlockHeight % 10 === 0) await this.blockchain.sleep(15);
+            if (fork.downloadBlocksSleep && nextBlockHeight % 10 === 0) await this.blockchain.sleep(15);
 
             let result;
 
@@ -362,7 +363,7 @@ class InterfaceBlockchainProtocolForkSolver{
             else
                 throw {message: "Fork didn't work at height ", nextBlockHeight};
 
-            if (fork.downloadAllBlocks && nextBlockHeight % 10 === 0) await this.blockchain.sleep(15);
+            if (fork.downloadBlocksSleep && nextBlockHeight % 10 === 0) await this.blockchain.sleep(15);
 
         }
 

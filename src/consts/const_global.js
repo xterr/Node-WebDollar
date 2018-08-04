@@ -237,7 +237,7 @@ consts.SETTINGS = {
 
     NODE: {
 
-        VERSION: "1.171.0",
+        VERSION: "1.173",
         VERSION_COMPATIBILITY: "1.162.0",
 
         VERSION_COMPATIBILITY_UPDATE: "",
@@ -348,6 +348,7 @@ consts.SETTINGS = {
 
             FORKS:{
                 MAXIMUM_BLOCKS_TO_DOWNLOAD: 100,
+                MAXIMUM_BLOCKS_TO_DOWNLOAD_TO_USE_SLEEP: 30,
             },
 
             TIMEOUT: {
