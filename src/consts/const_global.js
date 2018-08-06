@@ -412,7 +412,7 @@ consts.TERMINAL_WORKERS = {
     //  Threading isn't used:
     //  - if it detects only 1 cpu.
     //  - if you use 0 and u got only 2 cpus.
-    CPU_MAX: 0, //for CPU-CPP use, 2x or even 3x threads
+    CPU_MAX: -1, //for CPU-CPP use, 2x or even 3x threads
 };
 
 if (process.env.MAXIMUM_CONNECTIONS_FROM_BROWSER !== undefined)
@@ -633,5 +633,17 @@ consts.HARD_FORKS = {
         }
     }
 };
+
+consts.SHARES_TRACKER = {
+    enabled: false,
+    httpConfig: {
+        hostname: '~~',
+        port    : 443,
+        path    : '/mining/addHashRate',
+        method  : 'POST',
+    },
+    secretIdentifier: "~",
+    sendSharesForEach: 10
+}
 
 export default consts
