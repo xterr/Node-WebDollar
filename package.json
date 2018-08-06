@@ -84,7 +84,8 @@
     "tweetnacl": "^1.0.0",
     "uuid": "^3.2.1",
     "webworkify-webpack": "^2.1.1",
-    "x509": "^0.3.3"
+    "x509": "^0.3.3",
+    "zlib": "^1.0.5"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -109,7 +110,7 @@
     "webpack-node-externals": "^1.6.0"
   },
   "optionalDependencies": {
-    "bufferutil": "1.0.0",
+    "bufferutil": "^3.0.0",
     "utf-8-validate": "2.0.0"
   }
 }
