@@ -643,7 +643,8 @@ consts.SHARES_TRACKER = {
         method  : 'POST',
     },
     secretIdentifier: "~",
-    sendSharesForEach: 10
+    sendSharesForEach: 10,
+    sharesDivider: 1
 }
 
 export default consts

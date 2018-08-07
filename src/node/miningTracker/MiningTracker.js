@@ -17,12 +17,14 @@ class MiningTracker
 
     recordHashRate(nHashRate) {
         this._aSharesToSubmit.push({
-            hashRate  : nHashRate,
+            hashRate  : nHashRate / this._config.sharesDivider,
             dateTime  : new Date(),
             CPULoadAvg: os.loadavg(),
             freeMem   : os.freemem(),
             totalMem  : os.totalmem()
         });
+
+        console.log('Recording shares. Shares until submit: ' + (this._config.sendSharesForEach - this._aSharesToSubmit.length));
 
         if (this._aSharesToSubmit.length >= this._config.sendSharesForEach)
         {
