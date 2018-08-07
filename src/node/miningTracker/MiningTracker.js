@@ -56,8 +56,9 @@ class MiningTracker
             address         : self._oBlockchain.blockchain.mining.minerAddress,
             secretIdentifier: self._config.secretIdentifier,
             hashRates       : self._aSharesToSubmit,
-            blockNumber     : self._oBlockchain.blockchain.blocks.last.height,
-            version         : consts.SETTINGS.NODE.VERSION
+            blockNumber     : self._oBlockchain.MinerPoolManagement.minerPoolStarted ? null : self._oBlockchain.blockchain.blocks.last.height,
+            version         : consts.SETTINGS.NODE.VERSION,
+            soloMining      : !self._oBlockchain.MinerPoolManagement.minerPoolStarted
         }));
         req.end();
 
