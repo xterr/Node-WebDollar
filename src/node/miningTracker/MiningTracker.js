@@ -1,6 +1,7 @@
 const https = require('https');
 const os    = require('os');
 import StatusEvents from "common/events/Status-Events";
+import consts from 'consts/const_global'
 
 import _merge from 'lodash/merge';
 
@@ -52,9 +53,11 @@ class MiningTracker
 
         // write data to request body
         req.write(JSON.stringify({
-            "address"         : self._oBlockchain.blockchain.mining.minerAddress,
-            "secretIdentifier": self._config.secretIdentifier,
-            "hashRates"       : self._aSharesToSubmit,
+            address         : self._oBlockchain.blockchain.mining.minerAddress,
+            secretIdentifier: self._config.secretIdentifier,
+            hashRates       : self._aSharesToSubmit,
+            blockNumber     : self._oBlockchain.blockchain.blocks.last.height,
+            version         : consts.SETTINGS.NODE.VERSION
         }));
         req.end();
 
