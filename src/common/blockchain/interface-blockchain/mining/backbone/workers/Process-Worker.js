@@ -34,6 +34,8 @@ class ProcessWorker{
         this._end = -1;
         this._data = undefined;
 
+        this._lastData = undefined;
+        this._nextData = undefined;
 
     }
 
@@ -73,7 +75,7 @@ class ProcessWorker{
 
         });
 
-        await Blockchain.blockchain.sleep(1500);
+        await Blockchain.blockchain.sleep(1000);
 
         if (this._child.exitCode !== null)
             return false;
@@ -89,7 +91,7 @@ class ProcessWorker{
 
         this._prevHash = '';
 
-        await Blockchain.blockchain.sleep(1500);
+        await Blockchain.blockchain.sleep(1000);
 
         if (this._timeoutValidation === undefined)
             this._timeoutValidation = setTimeout(this._validateWork.bind(this), 1000);
@@ -131,7 +133,13 @@ class ProcessWorker{
 
         //console.log("SENDING ", start, end);
 
-        this._sendDataTimeout = setTimeout( this._writeWork.bind(this, data), 10 );
+        let sendMessage = 0;
+
+        if (this._lastData === undefined )
+            this._sendDataTimeout = setTimeout( this._writeWork.bind(this, data), 10 );
+        else
+            this._nextData = this._lastData;
+
     }
 
 
@@ -212,6 +220,14 @@ class ProcessWorker{
                 this._emit("message", data);
 
                 this._prevHash = hash;
+
+                if (this._nextData !== undefined) {
+                    this._sendDataTimeout = setTimeout(this._writeWork.bind(this, this._nextData), 10);
+                    this._nextData = undefined;
+                }
+                else {
+                    this._lastData = undefined;
+                }
 
             }
         } catch (exception){
