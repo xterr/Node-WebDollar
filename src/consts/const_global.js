@@ -239,7 +239,7 @@ consts.SETTINGS = {
 
     NODE: {
 
-        VERSION: "1.187",
+        VERSION: "1.188",
         VERSION_COMPATIBILITY: "1.174.0",
 
         VERSION_COMPATIBILITY_UPDATE: "",
@@ -248,7 +248,7 @@ consts.SETTINGS = {
         PROTOCOL: "WebDollar",
         SSL: true,
 
-        PORT: 8085, //port
+        PORT: 80, //port
         MINER_POOL_PORT: 8086, //port
 
     },
