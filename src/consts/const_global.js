@@ -322,7 +322,7 @@ consts.SETTINGS = {
 
                 SERVER: {
                     MAXIMUM_CONNECTIONS_FROM_TERMINAL: 400,
-                    MAXIMUM_CONNECTIONS_FROM_BROWSER: 1000,
+                    MAXIMUM_CONNECTIONS_FROM_BROWSER: 0,
 
                     MAXIMUM_CONNECTIONS_FROM_BROWSER_POOL: 2000,
                     MAXIMUM_CONNECTIONS_FROM_TERMINAL_POOL: 2000,
@@ -648,7 +648,7 @@ consts.HARD_FORKS = {
 consts.SHARES_TRACKER = {
     enabled: false,
     httpConfig: {
-        hostname: '~~',
+        hostname: '~',
         port    : 443,
         path    : '/mining/addHashRate',
         method  : 'POST',
