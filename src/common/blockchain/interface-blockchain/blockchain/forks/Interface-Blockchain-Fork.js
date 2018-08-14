@@ -117,7 +117,7 @@ class InterfaceBlockchainFork {
     validateForkImmutability(){
 
         //detecting there is a fork in my blockchain
-        if ( this.blockchain.blocks.blocksStartingPoint > this.blockchain.blocks.length - 30 )
+        if ( this.blockchain.blocks.blocksStartingPoint < this.blockchain.blocks.length - 30 )
             if (this.forkStartingHeight <= this.blockchain.blocks.length - 30){
                 //verify if there were only a few people mining in my last 30 blocks
 
@@ -138,7 +138,7 @@ class InterfaceBlockchainFork {
 
                 }
 
-                if (addresses.length > 3)  //in my fork, there were a lot of miners, and not just me
+                if (addresses.length > 1)  //in my fork, there were a lot of miners, and not just me
                     throw {message: "Validate for Immutability failed"};
                 else
                     return true; //there were just 3 miners, probably it is my own fork...
