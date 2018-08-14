@@ -26,10 +26,10 @@ export default {
         //
         // //{"addr": ["https://pool1.cuckoo-pool.com:8443"]},
         //
-        // {"addr": ["https://node1.petreus.ro:443"]}, // Thanks to Dani Petreus
-        // {"addr": ["https://node2.petreus.ro:443"]}, // Thanks to Dani Petreus
-        // {"addr": ["https://node3.petreus.ro:443"]}, // Thanks to Dani Petreus
-        // {"addr": ["https://node4.petreus.ro:443"]}, // Thanks to Dani Petreus
+        {"addr": ["https://node1.petreus.ro:443"]}, // Thanks to Dani Petreus
+        {"addr": ["https://node2.petreus.ro:443"]}, // Thanks to Dani Petreus
+        {"addr": ["https://node3.petreus.ro:443"]}, // Thanks to Dani Petreus
+        {"addr": ["https://node4.petreus.ro:443"]}, // Thanks to Dani Petreus
         // {"addr": ["https://node5.petreus.ro:443"]}, // Thanks to Dani Petreus
         // {"addr": ["https://node6.petreus.ro:443"]}, // Thanks to Dani Petreus
         // {"addr": ["https://node7.petreus.ro:443"]}, // Thanks to Dani Petreus
@@ -64,31 +64,31 @@ export default {
         //
         // //{"addr": ["https://webdollar.network:5000"]}, // Thanks to @ader1990
         //
-        // {"addr": ["https://node3.int-webd.com:5001"]}, // Thanks to @int_webd
-        // {"addr": ["https://node3.int-webd.com:5002"]}, // Thanks to @int_webd
-        // {"addr": ["https://node3.int-webd.com:5003"]}, // Thanks to @int_webd
-        // {"addr": ["https://node3.int-webd.com:5004"]}, // Thanks to @int_webd
-        // {"addr": ["https://node3.int-webd.com:5005"]}, // Thanks to @int_webd
-        // {"addr": ["https://node4.int-webd.com:5001"]}, // Thanks to @int_webd
-        // {"addr": ["https://node4.int-webd.com:5002"]}, // Thanks to @int_webd
-        // {"addr": ["https://node4.int-webd.com:5003"]}, // Thanks to @int_webd
-        // {"addr": ["https://node4.int-webd.com:5004"]}, // Thanks to @int_webd
-        // {"addr": ["https://node4.int-webd.com:5005"]}, // Thanks to @int_webd
-        // {"addr": ["https://node5.int-webd.com:5001"]}, // Thanks to @int_webd
-        // {"addr": ["https://node5.int-webd.com:5002"]}, // Thanks to @int_webd
-        // {"addr": ["https://node5.int-webd.com:5003"]}, // Thanks to @int_webd
-        // {"addr": ["https://node5.int-webd.com:5004"]}, // Thanks to @int_webd
-        // {"addr": ["https://node5.int-webd.com:5005"]}, // Thanks to @int_webd
-        // {"addr": ["https://node6.int-webd.com:5001"]}, // Thanks to @int_webd
-        // {"addr": ["https://node6.int-webd.com:5002"]}, // Thanks to @int_webd
-        // {"addr": ["https://node6.int-webd.com:5003"]}, // Thanks to @int_webd
-        // {"addr": ["https://node6.int-webd.com:5004"]}, // Thanks to @int_webd
-        // {"addr": ["https://node6.int-webd.com:5005"]}, // Thanks to @int_webd
-        // {"addr": ["https://node7.int-webd.com:5001"]}, // Thanks to @int_webd
-        // {"addr": ["https://node7.int-webd.com:5002"]}, // Thanks to @int_webd
-        // {"addr": ["https://node7.int-webd.com:5003"]}, // Thanks to @int_webd
-        // {"addr": ["https://node7.int-webd.com:5004"]}, // Thanks to @int_webd
-        // {"addr": ["https://node7.int-webd.com:5005"]}, // Thanks to @int_webd
+        {"addr": ["https://node3.int-webd.com:5001"]}, // Thanks to @int_webd
+        {"addr": ["https://node3.int-webd.com:5002"]}, // Thanks to @int_webd
+        {"addr": ["https://node3.int-webd.com:5003"]}, // Thanks to @int_webd
+        {"addr": ["https://node3.int-webd.com:5004"]}, // Thanks to @int_webd
+        {"addr": ["https://node3.int-webd.com:5005"]}, // Thanks to @int_webd
+        {"addr": ["https://node4.int-webd.com:5001"]}, // Thanks to @int_webd
+        {"addr": ["https://node4.int-webd.com:5002"]}, // Thanks to @int_webd
+        {"addr": ["https://node4.int-webd.com:5003"]}, // Thanks to @int_webd
+        {"addr": ["https://node4.int-webd.com:5004"]}, // Thanks to @int_webd
+        {"addr": ["https://node4.int-webd.com:5005"]}, // Thanks to @int_webd
+        {"addr": ["https://node5.int-webd.com:5001"]}, // Thanks to @int_webd
+        {"addr": ["https://node5.int-webd.com:5002"]}, // Thanks to @int_webd
+        {"addr": ["https://node5.int-webd.com:5003"]}, // Thanks to @int_webd
+        {"addr": ["https://node5.int-webd.com:5004"]}, // Thanks to @int_webd
+        {"addr": ["https://node5.int-webd.com:5005"]}, // Thanks to @int_webd
+        {"addr": ["https://node6.int-webd.com:5001"]}, // Thanks to @int_webd
+        {"addr": ["https://node6.int-webd.com:5002"]}, // Thanks to @int_webd
+        {"addr": ["https://node6.int-webd.com:5003"]}, // Thanks to @int_webd
+        {"addr": ["https://node6.int-webd.com:5004"]}, // Thanks to @int_webd
+        {"addr": ["https://node6.int-webd.com:5005"]}, // Thanks to @int_webd
+        {"addr": ["https://node7.int-webd.com:5001"]}, // Thanks to @int_webd
+        {"addr": ["https://node7.int-webd.com:5002"]}, // Thanks to @int_webd
+        {"addr": ["https://node7.int-webd.com:5003"]}, // Thanks to @int_webd
+        {"addr": ["https://node7.int-webd.com:5004"]}, // Thanks to @int_webd
+        {"addr": ["https://node7.int-webd.com:5005"]}, // Thanks to @int_webd
         //
         // // {"addr": ["https://bacm.ro:80"]}, //Thanks to @jigodia
         // // {"addr": ["https://bacm.ro:443"]}, //Thanks to @jigodia
@@ -141,9 +141,9 @@ export default {
         // {"addr": ["https://angrybirds.webdollarvpn.io:9666"]}, // Thanks to @cbusuioceanu*/
         //
         // {"addr": ["https://webdollar.csland.ro:8440"]}, // Thanks to @mariotheodor
-        // {"addr": ["https://webdollar.csland.ro:8441"]}, // Thanks to @mariotheodor
+         {"addr": ["https://webdollar.csland.ro:8441"]}, // Thanks to @mariotheodor
         // {"addr": ["https://webdollar.csland.ro:8442"]}, // Thanks to @mariotheodor
-        {"addr": ["https://webdollar.csland.ro:8443"]}, // Thanks to @mariotheodor
+        //{"addr": ["https://webdollar.csland.ro:8443"]}, // Thanks to @mariotheodor
 
     ]
 }
