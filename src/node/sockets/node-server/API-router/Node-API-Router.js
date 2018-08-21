@@ -78,9 +78,9 @@ class NodeAPIRouter{
 
         this._addRoute( 'list', this.showRoutes.bind(this), nodeApiType, 200 , app, prefix, middleWare );
 
-        this._addRoute('blockHeight/:blockHeight', NodeAPICustom.blockHeight.bind(NodeAPICustom), nodeApiType, 1000, app, prefix, middleWare)
-        this._addRoute('blockHeights/:blockHeights', NodeAPICustom.blockHeights.bind(NodeAPICustom), nodeApiType, 1000, app, prefix, middleWare)
-        this._addRoute('blocksStartingWithHeight/:startBlockHeight', NodeAPICustom.blockStartingWithHeight.bind(NodeAPICustom), nodeApiType, 1000, app, prefix, middleWare)
+        this._addRoute('blockHeight/:blockHeight', NodeAPICustom.blockHeight.bind(NodeAPICustom), nodeApiType, 100000, app, prefix, middleWare)
+        this._addRoute('blockHeights/:blockHeights', NodeAPICustom.blockHeights.bind(NodeAPICustom), nodeApiType, 100000, app, prefix, middleWare)
+        this._addRoute('blocksStartingWithHeight/:startBlockHeight', NodeAPICustom.blockStartingWithHeight.bind(NodeAPICustom), nodeApiType, 100000, app, prefix, middleWare)
     }
 
     initializeRouterCallbacks(app, middleWare, prefix='', nodeApiType){
