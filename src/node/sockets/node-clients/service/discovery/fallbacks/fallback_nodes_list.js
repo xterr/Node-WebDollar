@@ -44,10 +44,10 @@ export default {
 
         // {"addr": ["https://nodecstl.ddns.net:81/"]}, // Thanks to @taralungaCostel
 
-        {"addr": ["https://robitza.ddns.net:443"]}, // Thanks to @robertclaudiu
-        {"addr": ["https://robitza.ddns.net:8080"]}, // Thanks to @robertclaudiu
-        {"addr": ["https://robitza.ddns.net:8081"]}, // Thanks to @robertclaudiu
-        {"addr": ["https://robitza.ddns.net:8082"]}, // Thanks to @robertclaudiu
+        // {"addr": ["https://robitza.ddns.net:443"]}, // Thanks to @robertclaudiu
+        // {"addr": ["https://robitza.ddns.net:8080"]}, // Thanks to @robertclaudiu
+        // {"addr": ["https://robitza.ddns.net:8081"]}, // Thanks to @robertclaudiu
+        // {"addr": ["https://robitza.ddns.net:8082"]}, // Thanks to @robertclaudiu
         //
 
         {"addr": ["https://pool.webdollarminingpool.com:41000"]}, // Thanks to @morion4000
@@ -108,7 +108,7 @@ export default {
         {"addr": ["https://webdollarinfinitypool.space:8088"]}, //Thanks to @Tibi Popescu
         {"addr": ["https://webdollarinfinitypool.space:8089"]}, //Thanks to @Tibi Popescu
 
-
+        {"addr": ["https://chucknorris.webdollarvpn.io:80"]}, // Thanks to @cbusuioceanu
         {"addr": ["https://chucknorris.webdollarvpn.io:8080"]}, // Thanks to @cbusuioceanu
         {"addr": ["https://chucknorris.webdollarvpn.io:8081"]}, // Thanks to @cbusuioceanu
         {"addr": ["https://chucknorris.webdollarvpn.io:8082"]}, // Thanks to @cbusuioceanu
