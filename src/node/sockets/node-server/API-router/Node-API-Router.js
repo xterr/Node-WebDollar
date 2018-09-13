@@ -81,6 +81,7 @@ class NodeAPIRouter{
         this._addRoute('blockHeight/:blockHeight', NodeAPICustom.blockHeight.bind(NodeAPICustom), nodeApiType, 100000, app, prefix, middleWare)
         this._addRoute('blockHeights/:blockHeights', NodeAPICustom.blockHeights.bind(NodeAPICustom), nodeApiType, 100000, app, prefix, middleWare)
         this._addRoute('blocksStartingWithHeight/:startBlockHeight', NodeAPICustom.blockStartingWithHeight.bind(NodeAPICustom), nodeApiType, 100000, app, prefix, middleWare)
+        this._addRoute('pendingTransactions', NodeAPICustom.pendingTransactions.bind(NodeAPICustom), nodeApiType, 100000, app, prefix, middleWare)
     }
 
     initializeRouterCallbacks(app, middleWare, prefix='', nodeApiType){

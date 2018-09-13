@@ -240,6 +240,17 @@ class NodeAPICustom{
 
         return $oBlockData;
     }
+
+    pendingTransactions(req, res) {
+        let aTransactions = [];
+
+        Blockchain.blockchain.transactions.pendingQueue.list.forEach((oTransaction) => {
+            console.log(oTransaction);
+            aTransactions.push(oTransaction.toJSON());
+        })
+
+        return {result: true, transactions: aTransactions};
+    }
 }
 
 export default new NodeAPICustom();
