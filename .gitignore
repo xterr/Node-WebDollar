@@ -60,13 +60,15 @@ blockchainDB*
 
 defaultDB*
 
-poolDB/
+poolDB*
 
 blockchainDB2*
 
 blockchainDB3*
 
 walletDB/
+
+wallet/
 
 transactionsDB*
 
