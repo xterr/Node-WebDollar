@@ -389,7 +389,9 @@ consts.SETTINGS = {
 
         MINIMUM_TRANSACTION_AMOUNT: 100000, //10 WEBD
 
-    }
+    },
+
+    FREE_TRANSACTIONS_FROM_MEMORY: false,
 };
 
 consts.TERMINAL_WORKERS = {
