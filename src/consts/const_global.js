@@ -392,6 +392,7 @@ consts.SETTINGS = {
     },
 
     FREE_TRANSACTIONS_FROM_MEMORY: false,
+    GEO_IP_ENABLED: false
 };
 
 consts.TERMINAL_WORKERS = {
