@@ -391,7 +391,7 @@ consts.SETTINGS = {
 
     },
 
-    GEO_IP_ENABLED: true,
+    GEO_IP_ENABLED: false,
     FREE_TRANSACTIONS_FROM_MEMORY_MAX_NUMBER: 0, //use 0 to be disabled
 };
 
@@ -466,7 +466,6 @@ if ( consts.DEBUG === true ){
 
 }
 
-<<<<<<< HEAD
 consts.HARD_FORKS = {
     DATA: {
         153060: {
