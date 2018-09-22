@@ -3,18 +3,15 @@ const ipaddr = require('ipaddr.js');
 import {getContinentFromCountry} from './data/continents.js';
 import SocketAddress from 'common/sockets/protocol/extend-socket/Socket-Address'
 
+import consts from 'consts/const_global'
 import DownloadHelper from "common/utils/helpers/Download-Helper"
 import Utils from "common/utils/helpers/Utils";
-import consts from 'consts/const_global'
 
 class GeoHelper {
 
     async getLocationFromAddress(address, skipSocketAddress){
 
-        if (consts.SETTINGS.GEO_IP_ENABLED === false)
-        {
-            return;
-        }
+        if (consts.SETTINGS.GEO_IP_ENABLED === false) return;
 
         if ( skipSocketAddress === undefined) skipSocketAddress = false;
 

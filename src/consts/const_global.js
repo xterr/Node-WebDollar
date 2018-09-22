@@ -251,7 +251,7 @@ consts.SETTINGS = {
 
     NODE: {
 
-        VERSION: "1.198.0",
+        VERSION: "1.198.3",
 
         VERSION_COMPATIBILITY: "1.174",
         VERSION_COMPATIBILITY_POOL_MINERS: "1.174",
@@ -391,8 +391,8 @@ consts.SETTINGS = {
 
     },
 
-    FREE_TRANSACTIONS_FROM_MEMORY: false,
-    GEO_IP_ENABLED: false
+    GEO_IP_ENABLED: true,
+    FREE_TRANSACTIONS_FROM_MEMORY_MAX_NUMBER: 0, //use 0 to be disabled
 };
 
 consts.TERMINAL_WORKERS = {
@@ -415,7 +415,7 @@ consts.TERMINAL_WORKERS = {
      * cpu-cpp
      * gpu
      */
-    TYPE: process.env.TERMINAL_WORKERS_TYPE || "cpu", //cpu-cpp
+    TYPE: process.env.TERMINAL_WORKERS_TYPE || "cpu-cpp", //cpu-cpp, or gpu
 
     // file gets created on build
     PATH: './dist_bundle/terminal_worker.js',
@@ -466,6 +466,7 @@ if ( consts.DEBUG === true ){
 
 }
 
+<<<<<<< HEAD
 consts.HARD_FORKS = {
     DATA: {
         153060: {
